@@ -8,6 +8,8 @@ const mongoose = require('mongoose');
 const cookieParser = require('cookie-parser');
 const authRoutes = require('./routes/auth.routes');
 const userRoutes = require('./routes/user.routes');
+const studentRoutes = require('./routes/student.routes');
+const topicCategoryRoutes = require('./routes/topicCategory.routes');
 
 // Load env vars
 dotenv.config();
@@ -32,8 +34,10 @@ app.use(helmet());
 app.use(morgan('dev'));
 
 // API Routes
+app.use('/api/student', studentRoutes);
 app.use('/api/auth', authRoutes);
 app.use('/api/users', userRoutes);
+app.use('/api/topic-categories', topicCategoryRoutes);
 
 // Basic route
 app.get('/', (req, res) => {

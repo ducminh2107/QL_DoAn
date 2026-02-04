@@ -1,9 +1,9 @@
 import React from 'react';
 import { Container, Paper, Typography, Button, Box } from '@mui/material';
 import { useNavigate } from 'react-router-dom';
-import { SearchOff as SearchOffIcon } from '@mui/icons-material';
+import { Lock as LockIcon } from '@mui/icons-material';
 
-const NotFound = () => {
+const Unauthorized = () => {
   const navigate = useNavigate();
 
   return (
@@ -17,25 +17,28 @@ const NotFound = () => {
         }}
       >
         <Paper elevation={3} sx={{ p: 4, width: '100%', textAlign: 'center' }}>
-          <SearchOffIcon sx={{ fontSize: 80, color: 'warning.main', mb: 2 }} />
+          <LockIcon sx={{ fontSize: 80, color: 'error.main', mb: 2 }} />
           <Typography variant="h4" gutterBottom>
-            🔍 404 - Không Tìm Thấy Trang
+            ⚠️ Truy Cập Bị Từ Chối
           </Typography>
           <Typography variant="body1" color="text.secondary" paragraph>
-            Trang bạn đang tìm kiếm không tồn tại hoặc đã bị di chuyển.
+            Bạn không có quyền truy cập vào trang này.
+          </Typography>
+          <Typography variant="body2" color="text.secondary" paragraph>
+            Vui lòng liên hệ quản trị viên nếu bạn nghĩ đây là lỗi.
           </Typography>
           <Button
             variant="contained"
-            onClick={() => navigate('/dashboard')}
+            onClick={() => navigate(-1)}
             sx={{ mr: 2 }}
           >
-            Về trang chủ
+            Quay lại
           </Button>
           <Button
             variant="outlined"
-            onClick={() => navigate(-1)}
+            onClick={() => navigate('/dashboard')}
           >
-            Quay lại
+            Về trang chủ
           </Button>
         </Paper>
       </Box>
@@ -43,4 +46,4 @@ const NotFound = () => {
   );
 };
 
-export default NotFound;
+export default Unauthorized;

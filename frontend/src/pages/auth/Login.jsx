@@ -1,186 +1,173 @@
+import React, { useState } from 'react';
+import { useNavigate, Link as RouterLink } from 'react-router-dom';
 import {
-  Box,
-  Button,
-  TextField,
-  Typography,
   Container,
   Paper,
-  Divider,
-} from "@mui/material";
-import { useState } from "react";
-import { useNavigate } from "react-router-dom";
-import toast from "react-hot-toast";
+  TextField,
+  Button,
+  Typography,
+  Link,
+  Box,
+  Alert,
+  CircularProgress,
+  InputAdornment,
+  IconButton,
+  Avatar
+} from '@mui/material';
+import { Visibility, VisibilityOff, School, LockPerson } from '@mui/icons-material';
+import { useForm } from 'react-hook-form';
+import { yupResolver } from '@hookform/resolvers/yup';
+import * as yup from 'yup';
+import { useAuth } from '../../contexts/AuthContext';
+import toast from 'react-hot-toast';
 
-function Login() {
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
+// Validation schema
+const loginSchema = yup.object().shape({
+  email: yup
+    .string()
+    .email('Email không hợp lệ')
+    .required('Email là bắt buộc'),
+  password: yup
+    .string()
+    .required('Mật khẩu là bắt buộc')
+});
+
+const Login = () => {
   const navigate = useNavigate();
+  const { login } = useAuth();
+  const [showPassword, setShowPassword] = useState(false);
+  const [loading, setLoading] = useState(false);
 
-  const handleSubmit = (e) => {
-    e.preventDefault();
-    if (email === "admin@thesis.edu.vn" && password === "admin123") {
-      toast.success("Đăng nhập thành công!");
-      navigate("/dashboard");
-    } else {
-      toast.error("Tài khoản hoặc mật khẩu không chính xác!");
+  const {
+    register,
+    handleSubmit,
+    formState: { errors }
+  } = useForm({
+    resolver: yupResolver(loginSchema)
+  });
+
+  const onSubmit = async (data) => {
+    try {
+      setLoading(true);
+      await login(data.email, data.password);
+      toast.success('Đăng nhập thành công!');
+      
+      // Redirect based on role
+      const user = JSON.parse(localStorage.getItem('user'));
+      if (user?.role === 'admin') {
+        navigate('/admin');
+      } else if (user?.role === 'teacher') {
+        navigate('/teacher');
+      } else {
+        navigate('/student');
+      }
+    } catch (error) {
+      const errorMessage = error.response?.data?.message || 'Đăng nhập thất bại';
+      toast.error(errorMessage);
+    } finally {
+      setLoading(false);
     }
   };
 
   return (
-    <Box
-      sx={{
-        minHeight: "100vh",
-        display: "flex",
-        alignItems: "center",
-        justifyContent: "center",
-        backgroundColor: "#f8f9fb",
-        position: "relative",
-        overflow: "hidden",
-      }}
-    >
-      {/* Decorative Illustrations */}
+    <Container component="main" maxWidth="xs">
       <Box
         sx={{
-          position: "absolute",
-          bottom: 20,
-          left: 40,
-          display: { xs: "none", md: "block" },
-          opacity: 0.8,
+          marginTop: 8,
+          display: 'flex',
+          flexDirection: 'column',
+          alignItems: 'center',
         }}
       >
-        <svg width="240" height="240" viewBox="0 0 240 240">
-          <rect
-            x="20"
-            y="100"
-            width="80"
-            height="120"
-            rx="4"
-            fill="#64b5f6"
-            opacity="0.1"
-          />
-          <path
-            d="M40 140 H80 M40 160 H70 M40 180 H60"
-            stroke="#42a5f5"
-            strokeWidth="3"
-            strokeLinecap="round"
-          />
-          <circle
-            cx="160"
-            cy="180"
-            r="40"
-            stroke="#ffb74d"
-            strokeWidth="4"
-            strokeDasharray="8 4"
-            fill="none"
-          />
-          <path
-            d="M120 220 L160 160 L200 220"
-            stroke="#ef5350"
-            strokeWidth="3"
-            fill="none"
-            opacity="0.6"
-          />
-        </svg>
-      </Box>
-      <Box
-        sx={{
-          position: "absolute",
-          bottom: 40,
-          right: 40,
-          display: { xs: "none", md: "block" },
-          opacity: 0.8,
-        }}
-      >
-        <svg width="240" height="240" viewBox="0 0 240 240">
-          <circle cx="120" cy="120" r="100" fill="#e3f2fd" opacity="0.3" />
-          <rect
-            x="80"
-            y="60"
-            width="80"
-            height="100"
-            rx="8"
-            fill="white"
-            stroke="#e0e0e0"
-            strokeWidth="2"
-          />
-          <rect x="95" y="75" width="50" height="6" rx="3" fill="#42a5f5" />
-          <rect x="95" y="90" width="40" height="4" rx="2" fill="#eeeeee" />
-          <rect x="95" y="100" width="30" height="4" rx="2" fill="#eeeeee" />
-          <circle cx="180" cy="80" r="20" fill="#81c784" opacity="0.4" />
-        </svg>
-      </Box>
+        {/* Logo/Header */}
+        <Box sx={{ mb: 3, textAlign: 'center' }}>
+          <Avatar sx={{ width: 80, height: 80, mb: 2, mx: 'auto', bgcolor: 'primary.main' }}>
+            <LockPerson sx={{ fontSize: 40 }} />
+          </Avatar>
+          <Typography component="h1" variant="h5" sx={{ fontWeight: 600 }}>
+            HỆ THỐNG QUẢN LÝ LUẬN VĂN
+          </Typography>
+          <Typography variant="body2" color="text.secondary">
+            Đăng nhập với tài khoản được cấp
+          </Typography>
+        </Box>
 
-      <Container maxWidth="sm" sx={{ zIndex: 1 }}>
         <Paper
-          elevation={0}
+          elevation={3}
           sx={{
-            p: 5,
-            borderRadius: 4,
-            boxShadow: "0 10px 40px rgba(0,0,0,0.05)",
-            textAlign: "center",
+            padding: 4,
+            width: '100%',
+            display: 'flex',
+            flexDirection: 'column',
+            alignItems: 'center',
           }}
         >
-          {/* Logo Section */}
-          <Box
-            component="img"
-            src="https://sso.tdmu.edu.vn/images/tdmu-icon-ldpi.png"
-            alt="TDMU Logo"
-            sx={{ width: 80, mb: 2 }}
-          />
-          <Typography
-            variant="h6"
-            sx={{
-              fontWeight: 700,
-              color: "#1a237e",
-              mb: 4,
-              textTransform: "uppercase",
-              letterSpacing: 1,
-            }}
-          >
-            Trường Đại học Thủ Dầu Một
+          <Typography component="h2" variant="h6" sx={{ mb: 3 }}>
+            ĐĂNG NHẬP HỆ THỐNG
           </Typography>
 
-          {/* Form Section */}
-          <Box component="form" onSubmit={handleSubmit} noValidate>
-            <Box sx={{ textAlign: "left", mb: 2 }}>
-              <Typography variant="body2" sx={{ fontWeight: 600, mb: 1 }}>
-                Tài khoản <span style={{ color: "red" }}>*</span>
-              </Typography>
-              <TextField
-                fullWidth
-                placeholder="Mã sinh viên"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                variant="outlined"
-                sx={{
-                  "& .MuiOutlinedInput-root": {
-                    backgroundColor: "#f3f6f9",
-                    "& fieldset": { border: "none" },
-                    borderRadius: 2,
-                  },
-                }}
-              />
-            </Box>
+          <Box
+            component="form"
+            onSubmit={handleSubmit(onSubmit)}
+            sx={{ width: '100%' }}
+          >
+            <TextField
+              margin="normal"
+              fullWidth
+              label="Email"
+              autoComplete="email"
+              autoFocus
+              {...register('email')}
+              error={!!errors.email}
+              helperText={errors.email?.message}
+              disabled={loading}
+              InputProps={{
+                startAdornment: (
+                  <InputAdornment position="start">
+                    <School />
+                  </InputAdornment>
+                ),
+              }}
+            />
 
-            <Box sx={{ textAlign: "left", mb: 3 }}>
-              <Typography variant="body2" sx={{ fontWeight: 600, mb: 1 }}>
-                Mật khẩu <span style={{ color: "red" }}>*</span>
-              </Typography>
-              <TextField
-                fullWidth
-                type="password"
-                placeholder="Mật khẩu"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                variant="outlined"
-                sx={{
-                  "& .MuiOutlinedInput-root": {
-                    backgroundColor: "#f3f6f9",
-                    "& fieldset": { border: "none" },
-                    borderRadius: 2,
-                  },
-                }}
-              />
+            <TextField
+              margin="normal"
+              fullWidth
+              label="Mật khẩu"
+              type={showPassword ? 'text' : 'password'}
+              autoComplete="current-password"
+              {...register('password')}
+              error={!!errors.password}
+              helperText={errors.password?.message}
+              disabled={loading}
+              InputProps={{
+                startAdornment: (
+                  <InputAdornment position="start">
+                    <LockPerson />
+                  </InputAdornment>
+                ),
+                endAdornment: (
+                  <InputAdornment position="end">
+                    <IconButton
+                      onClick={() => setShowPassword(!showPassword)}
+                      edge="end"
+                    >
+                      {showPassword ? <VisibilityOff /> : <Visibility />}
+                    </IconButton>
+                  </InputAdornment>
+                )
+              }}
+            />
+
+            <Box sx={{ textAlign: 'right', mt: 1 }}>
+              <Link
+                component={RouterLink}
+                to="/forgot-password"
+                variant="body2"
+                underline="hover"
+              >
+                Quên mật khẩu?
+              </Link>
             </Box>
 
             <Button
@@ -188,60 +175,46 @@ function Login() {
               fullWidth
               variant="contained"
               size="large"
-              sx={{
-                py: 1.5,
-                borderRadius: 2,
-                textTransform: "none",
-                fontSize: "1rem",
-                fontWeight: 600,
-                boxShadow: "0 4px 12px rgba(66, 165, 245, 0.3)",
-              }}
+              sx={{ mt: 3, mb: 2, py: 1.5 }}
+              disabled={loading}
             >
-              Đăng nhập
+              {loading ? (
+                <CircularProgress size={24} color="inherit" />
+              ) : (
+                'ĐĂNG NHẬP'
+              )}
             </Button>
+
+            {/* Demo credentials for development */}
+            <Alert severity="info" sx={{ mt: 3 }}>
+              <Typography variant="subtitle2" gutterBottom>
+                📝 Tài khoản demo (chỉ dùng cho phát triển):
+              </Typography>
+              <Typography variant="caption" component="div">
+                • <strong>Admin</strong>: admin@thesis.edu.vn / admin123
+              </Typography>
+              <Typography variant="caption" component="div">
+                • <strong>Giảng viên</strong>: teacher@thesis.edu.vn / teacher123
+              </Typography>
+              <Typography variant="caption" component="div">
+                • <strong>Sinh viên</strong>: student@thesis.edu.vn / student123
+              </Typography>
+            </Alert>
           </Box>
-
-          {/*<Box sx={{ my: 3, display: "flex", alignItems: "center" }}>
-            <Divider sx={{ flex: 1 }} />
-            <Typography
-              variant="caption"
-              sx={{ px: 2, color: "#999", fontWeight: 700 }}
-            >
-              HOẶC
-            </Typography>
-            <Divider sx={{ flex: 1 }} />
-          </Box>*/}
-
-          {/* Google Login Button */}
-          {/*<Button
-            fullWidth
-            variant="outlined"
-            startIcon={
-              <Box
-                component="img"
-                src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg"
-                sx={{ width: 18 }}
-              />
-            }
-            sx={{
-              py: 1.5,
-              borderRadius: 2,
-              textTransform: "none",
-              color: "#666",
-              borderColor: "#e0e0e0",
-              backgroundColor: "#f8f9fb",
-              "&:hover": {
-                backgroundColor: "#f3f6f9",
-                borderColor: "#d0d0d0",
-              },
-            }}
-          >
-            Đăng nhập bằng tài khoản Email
-          </Button>*/}
         </Paper>
-      </Container>
-    </Box>
+
+        {/* Footer */}
+        <Box sx={{ mt: 4, textAlign: 'center' }}>
+          <Typography variant="body2" color="text.secondary">
+            © {new Date().getFullYear()} Hệ Thống Quản Lý Luận Văn
+          </Typography>
+          <Typography variant="caption" color="text.secondary">
+            Tài khoản được cung cấp bởi Nhà trường
+          </Typography>
+        </Box>
+      </Box>
+    </Container>
   );
-}
+};
 
 export default Login;

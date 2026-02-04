@@ -6,8 +6,10 @@
     "dev": "nodemon src/server.js",
     "start": "node src/server.js",
     "seed": "node scripts/seed-database.js",
+    "seed:student": "node scripts/seed-student-test-data.js",
     "lint": "eslint .",
-    "test:auth": "jest --testPathPatterns=auth",
+    "test:student": "jest --testPathPatterns=student",
+    "test:all": "jest --testPathPatterns=\"(auth|student)\"",
     "format": "prettier --write .",
     "test": "jest"
   },

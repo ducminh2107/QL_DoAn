@@ -1,7 +1,6 @@
 #!/usr/bin/env node
 
 const mongoose = require('mongoose');
-const bcrypt = require('bcryptjs');
 const dotenv = require('dotenv');
 
 dotenv.config();
@@ -10,21 +9,24 @@ const User = require('../src/models/User');
 
 const seedUsers = async () => {
   try {
-    await mongoose.connect(process.env.MONGODB_URI);
+    // Dùng cùng connection string với server để seed đúng database
+    await mongoose.connect(
+      process.env.MONGODB_CONNECTIONSTRING || process.env.MONGODB_URI
+    );
     console.log('📦 Connected to database for seeding users...');
 
     // Clear existing users
     await User.deleteMany({});
     console.log('🧹 Cleared existing users');
 
-    // Hash password
-    const hashedPassword = await bcrypt.hash('admin123', 10);
+    // LƯU Ý: KHÔNG tự hash mật khẩu ở đây.
+    // User model đã có hook pre('save') để hash password.
 
     // Create admin user
     const adminUser = await User.create({
       user_id: 'ADMIN001',
       email: 'admin@thesis.edu.vn',
-      password: hashedPassword,
+      password: 'admin123',
       user_name: 'System Administrator',
       role: 'admin',
       user_status: true,
@@ -35,7 +37,7 @@ const seedUsers = async () => {
     const teacherUser = await User.create({
       user_id: 'TEACH001',
       email: 'teacher@thesis.edu.vn',
-      password: hashedPassword,
+      password: 'teacher123',
       user_name: 'Dr. Nguyen Van A',
       role: 'teacher',
       user_status: true,
@@ -48,7 +50,7 @@ const seedUsers = async () => {
     const studentUser = await User.create({
       user_id: 'STU001',
       email: 'student@thesis.edu.vn',
-      password: hashedPassword,
+      password: 'student123',
       user_name: 'Nguyen Van B',
       role: 'student',
       user_status: true,
@@ -61,8 +63,8 @@ const seedUsers = async () => {
 
     console.log('👥 Created test users:');
     console.log(`  👨‍💼 Admin: ${adminUser.email} / admin123`);
-    console.log(`  👨‍🏫 Teacher: ${teacherUser.email} / admin123`);
-    console.log(`  👨‍🎓 Student: ${studentUser.email} / admin123`);
+    console.log(`  👨‍🏫 Teacher: ${teacherUser.email} / teacher123`);
+    console.log(`  👨‍🎓 Student: ${studentUser.email} / student123`);
 
     console.log('✅ User seeding completed successfully!');
 

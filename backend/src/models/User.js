@@ -76,6 +76,32 @@ const userSchema = new mongoose.Schema(
     },
     user_transcript: String,
 
+    // Topic References
+    current_topic: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'Topic',
+    },
+    registered_topics: [
+      {
+        topic: {
+          type: mongoose.Schema.Types.ObjectId,
+          ref: 'Topic',
+        },
+        status: {
+          type: String,
+          enum: ['pending', 'approved', 'rejected', 'withdrawn'],
+        },
+        registered_at: Date,
+        updated_at: Date,
+      },
+    ],
+    proposed_topics: [
+      {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'Topic',
+      },
+    ],
+
     // Tokens for password reset
     resetPasswordToken: String,
     resetPasswordExpire: Date,

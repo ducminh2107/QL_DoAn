@@ -2,12 +2,14 @@ const mongoose = require('mongoose');
 
 const connectDB = async () => {
   try {
+    console.log('⏳ Đang kết nối tới MongoDB Atlas...');
     const conn = await mongoose.connect(process.env.MONGODB_CONNECTIONSTRING, {
       useNewUrlParser: true,
       useUnifiedTopology: true,
+      serverSelectionTimeoutMS: 5000, // Timeout sau 5 giây nếu không kết nối được
     });
 
-    console.log(`✅ Liên kế CSDL thành công!: ${conn.connection.host}`);
+    console.log(`✅ Kết nối CSDL thành công!: ${conn.connection.host}`);
 
     // Xử lý events
     mongoose.connection.on('error', (err) => {
