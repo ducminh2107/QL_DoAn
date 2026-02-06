@@ -6,6 +6,13 @@ const ProtectedRoute = ({ children, roles = [] }) => {
   const { user, loading, isAuthenticated } = useAuth();
   const location = useLocation();
 
+  console.log("🔐 ProtectedRoute Check:");
+  console.log("   - Loading:", loading);
+  console.log("   - Authenticated:", isAuthenticated);
+  console.log("   - User:", user);
+  console.log("   - Required roles:", roles);
+  console.log("   - User role:", user?.role);
+
   if (loading) {
     return (
       <Box
@@ -20,13 +27,21 @@ const ProtectedRoute = ({ children, roles = [] }) => {
   }
 
   if (!isAuthenticated) {
+    console.log("❌ Not authenticated - redirecting to /login");
     return <Navigate to="/login" state={{ from: location }} replace />;
   }
 
   if (roles.length > 0 && !roles.includes(user.role)) {
+    console.log(
+      "❌ Role mismatch - required:",
+      roles,
+      "but user has:",
+      user.role
+    );
     return <Navigate to="/unauthorized" replace />;
   }
 
+  console.log("✅ Access granted");
   return children;
 };
 

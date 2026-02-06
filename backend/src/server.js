@@ -10,6 +10,7 @@ const authRoutes = require('./routes/auth.routes');
 const userRoutes = require('./routes/user.routes');
 const studentRoutes = require('./routes/student.routes');
 const topicCategoryRoutes = require('./routes/topicCategory.routes');
+const teacherRoutes = require('./routes/teacher.routes');
 
 // Load env vars
 dotenv.config();
@@ -33,8 +34,20 @@ app.use(
 app.use(helmet());
 app.use(morgan('dev'));
 
+// Cache control middleware for API endpoints
+app.use('/api', (req, res, next) => {
+  res.set(
+    'Cache-Control',
+    'no-store, no-cache, must-revalidate, proxy-revalidate'
+  );
+  res.set('Pragma', 'no-cache');
+  res.set('Expires', '0');
+  next();
+});
+
 // API Routes
 app.use('/api/student', studentRoutes);
+app.use('/api/teacher', teacherRoutes);
 app.use('/api/auth', authRoutes);
 app.use('/api/users', userRoutes);
 app.use('/api/topic-categories', topicCategoryRoutes);

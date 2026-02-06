@@ -61,7 +61,9 @@ const topicSchema = new mongoose.Schema(
         },
       },
     ],
-
+    
+    
+    
     // Instructor & Reviewer Assignment
     topic_instructor: {
       type: mongoose.Schema.Types.ObjectId,
@@ -88,6 +90,52 @@ const topicSchema = new mongoose.Schema(
     topic_advisor_request: String,
     topic_final_report: String,
     topic_defense_request: String,
+
+    // Teacher features
+    teacher_notes: {
+      type: String,
+      maxlength: 2000,
+    },
+    teacher_feedback: [
+      {
+        date: {
+          type: Date,
+          default: Date.now,
+        },
+        type: {
+          type: String,
+          enum: ['progress', 'report', 'general'],
+        },
+        content: String,
+        attachments: [String],
+      },
+    ],
+    milestones: [
+      {
+        name: String,
+        description: String,
+        due_date: Date,
+        status: {
+          type: String,
+          enum: ['pending', 'in_progress', 'completed', 'delayed'],
+          default: 'pending',
+        },
+        completed_date: Date,
+        attachments: [String],
+        notes: String,
+      },
+    ],
+    defense_schedule: {
+      scheduled_date: Date,
+      scheduled_time: String,
+      room: String,
+      status: {
+        type: String,
+        enum: ['pending', 'scheduled', 'completed', 'cancelled'],
+        default: 'pending',
+      },
+      notes: String,
+    },
 
     // Rubrics
     rubric_instructor: {

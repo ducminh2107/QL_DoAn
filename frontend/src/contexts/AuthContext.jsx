@@ -20,7 +20,7 @@ export const AuthProvider = ({ children }) => {
         }
         return config;
       },
-      (error) => Promise.reject(error),
+      (error) => Promise.reject(error)
     );
 
     const responseInterceptor = axios.interceptors.response.use(
@@ -40,7 +40,7 @@ export const AuthProvider = ({ children }) => {
           }
         }
         return Promise.reject(error);
-      },
+      }
     );
 
     return () => {
@@ -61,6 +61,8 @@ export const AuthProvider = ({ children }) => {
   const loadUser = async () => {
     try {
       const response = await axios.get("/api/auth/me");
+      console.log("🔍 User loaded from API:", response.data.data.user);
+      console.log("📍 User role:", response.data.data.user.role);
       setUser(response.data.data.user);
     } catch (error) {
       console.error("Failed to load user:", error);
@@ -148,7 +150,7 @@ export const AuthProvider = ({ children }) => {
     try {
       const response = await axios.put(
         "/api/auth/change-password",
-        passwordData,
+        passwordData
       );
       toast.success("Đổi mật khẩu thành công");
       return response.data;

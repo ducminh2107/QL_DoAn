@@ -1,0 +1,41 @@
+// Test API endpoint - thêm vào auth.routes.js
+// Để debug xem /api/auth/me trả về gì
+
+/**
+ * @desc    Get current user (DEBUG version with logs)
+ * @route   GET /api/auth/debug
+ * @access  Private
+ */
+const getMeDebug = async (req, res, next) => {
+  try {
+    console.log("\n🔍 DEBUG: /api/auth/debug endpoint called");
+    console.log("   req.user:", req.user);
+
+    const user = await User.findById(req.user.id);
+    
+    console.log("   User from DB:", user);
+    console.log("   User role:", user?.role);
+    console.log("   User email:", user?.email);
+
+    res.status(200).json({
+      success: true,
+      data: {
+        user: sanitizeUser(user),
+        debug: {
+          userIdFromToken: req.user.id,
+          roleInDB: user?.role,
+          emailInDB: user?.email,
+          timestamp: new Date(),
+        },
+      },
+    });
+  } catch (error) {
+    console.error("Error in getMeDebug:", error);
+    next(error);
+  }
+};
+
+module.exports = {
+  // ... other exports
+  getMeDebug,
+};

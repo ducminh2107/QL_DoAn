@@ -7,9 +7,11 @@
     "start": "node src/server.js",
     "seed": "node scripts/seed-database.js",
     "seed:student": "node scripts/seed-student-test-data.js",
+    "seed:teacher": "node scripts/seed-teacher-test-data.js",
     "lint": "eslint .",
     "test:student": "jest --testPathPatterns=student",
-    "test:all": "jest --testPathPatterns=\"(auth|student)\"",
+    "test:teacher": "jest --testPathPatterns=teacher",
+    "test:all": "jest --testPathPatterns=\"(auth|student|teacher)\"",
     "format": "prettier --write .",
     "test": "jest"
   },
