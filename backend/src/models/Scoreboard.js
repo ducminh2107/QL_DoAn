@@ -2,37 +2,44 @@ const mongoose = require('mongoose');
 
 const scoreboardSchema = new mongoose.Schema(
   {
+    rubric_id: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'Rubric',
+    },
+    rubric_category: {
+      type: String,
+      enum: ['instructor', 'reviewer', 'assembly'],
+    },
     topic_id: {
       type: mongoose.Schema.Types.ObjectId,
       ref: 'Topic',
-      required: true,
+    },
+    grader: {
+      type: String,
     },
     student_id: {
-      type: mongoose.Schema.Types.ObjectId,
-      ref: 'User',
-      required: true,
+      type: String,
     },
-    grader: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
-    rubric_id: { type: mongoose.Schema.Types.ObjectId, ref: 'Rubric' },
-    rubric_student_evaluations: { type: Array },
-    total_score: { type: Number },
-    student_grades: { type: String },
-    rubric_category: { type: String, enum: ['instructor', 'reviewer'] },
-    created_at: { type: Date, default: Date.now },
-    updated_at: { type: Date, default: Date.now },
+    rubric_student_evaluations: [
+      {
+        criteria_id: Number,
+        criteria_name: String,
+        score: Number,
+        comment: String,
+        max_score: Number,
+        weight: Number,
+      },
+    ],
+    total_score: Number,
+    student_grades: String,
   },
   {
-    timestamps: true,
+    timestamps: { createdAt: 'created_at', updatedAt: 'updated_at' },
   }
 );
 
 scoreboardSchema.index({ grader: 1 });
 scoreboardSchema.index({ student_id: 1 });
 scoreboardSchema.index({ topic_id: 1 });
-
-scoreboardSchema.pre('save', function (next) {
-  this.updated_at = Date.now();
-  next();
-});
 
 module.exports = mongoose.model('Scoreboard', scoreboardSchema);

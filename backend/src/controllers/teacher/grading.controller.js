@@ -1,6 +1,7 @@
 const Topic = require('../../models/Topic');
 const Rubric = require('../../models/Rubric');
 const Scoreboard = require('../../models/Scoreboard');
+const User = require('../../models/User');
 
 /**
  * @desc    Get topics ready for grading
@@ -62,7 +63,7 @@ const getTopicsForGrading = async (req, res, next) => {
  */
 const getGradingRubric = async (req, res, next) => {
   try {
-    const teacherId = req.user.id;
+    const teacherUserId = req.user.user_id;
     const { topicId } = req.params;
     const { type = 'instructor' } = req.query;
 
@@ -204,19 +205,24 @@ const submitGrades = async (req, res, next) => {
     const approvedStudents = topic.topic_group_student.filter(s => s.status === 'approved');
     
     const scoreboardPromises = approvedStudents.map(async (student) => {
+      const studentUserId =
+        student.student?.user_id ||
+        student.student_id ||
+        student.student?._id?.toString() ||
+        '';
       const scoreboard = await Scoreboard.findOneAndUpdate(
         {
           topic_id: topicId,
-          student_id: student.student._id,
+          student_id: studentUserId,
           rubric_category: rubricType,
-          grader: teacherId
+          grader: teacherUserId
         },
         {
           rubric_id: rubric._id,
           topic_id: topicId,
-          grader: teacherId,
-          student_id: student.student._id,
-          rubric_student_evaluations: evaluations,
+          grader: teacherUserId,
+          student_id: studentUserId,
+          rubric_student_evaluations: gradingData.evaluations,
           total_score: totalScore,
           student_grades: calculateGrade(totalScore),
           rubric_category: rubricType
@@ -233,8 +239,8 @@ const submitGrades = async (req, res, next) => {
       const Notification = require('../../models/Notification');
       return Notification.create({
         user_notification_title: `Điểm ${type === 'instructor' ? 'hướng dẫn' : 'phản biện'} cho đề tài "${topic.topic_title}"`,
-        user_notification_sender: teacherId,
-        user_notification_recipient: student.student._id,
+        user_notification_sender: teacherUserId,
+        user_notification_recipient: student.student?.user_id || student.student_id || '',
         user_notification_content: comments || `Giảng viên đã chấm điểm ${type === 'instructor' ? 'hướng dẫn' : 'phản biện'} cho đề tài của bạn.`,
         user_notification_type: 'system'
       });
@@ -265,11 +271,11 @@ const submitGrades = async (req, res, next) => {
  */
 const getGradingHistory = async (req, res, next) => {
   try {
-    const teacherId = req.user.id;
+    const teacherUserId = req.user.user_id;
     const { type, year, page = 1, limit = 10 } = req.query;
     const skip = (page - 1) * limit;
 
-    let query = { grader: teacherId };
+    let query = { grader: teacherUserId };
     
     if (type) {
       query.rubric_category = type;
@@ -284,12 +290,30 @@ const getGradingHistory = async (req, res, next) => {
     const [scoreboards, total] = await Promise.all([
       Scoreboard.find(query)
         .populate('topic_id', 'topic_title topic_category')
-        .populate('student_id', 'user_name user_id')
         .sort({ created_at: -1 })
         .skip(skip)
         .limit(limit),
       Scoreboard.countDocuments(query)
     ]);
+
+    const studentIds = [
+      ...new Set(
+        scoreboards.map((scoreboard) => scoreboard.student_id).filter(Boolean)
+      ),
+    ];
+    const students = studentIds.length
+      ? await User.find({ user_id: { $in: studentIds } }).select(
+          'user_id user_name'
+        )
+      : [];
+    const studentMap = new Map(
+      students.map((student) => [student.user_id, student])
+    );
+
+    const scoreboardsWithStudents = scoreboards.map((scoreboard) => ({
+      ...scoreboard.toObject(),
+      student_id: studentMap.get(scoreboard.student_id) || null,
+    }));
 
     // Get statistics
     const stats = {
@@ -303,7 +327,7 @@ const getGradingHistory = async (req, res, next) => {
       
       // Group by rubric category
       const categories = await Scoreboard.aggregate([
-        { $match: { grader: teacherId } },
+        { $match: { grader: teacherUserId } },
         { $group: {
           _id: '$rubric_category',
           count: { $sum: 1 },
@@ -328,7 +352,7 @@ const getGradingHistory = async (req, res, next) => {
         total,
         pages: Math.ceil(total / limit)
       },
-      data: scoreboards
+      data: scoreboardsWithStudents
     });
 
   } catch (error) {

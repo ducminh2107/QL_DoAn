@@ -2,40 +2,42 @@ const mongoose = require('mongoose');
 
 const rubricEvaluationSchema = new mongoose.Schema(
   {
-    criteria: { type: String, required: true },
-    description: String,
-    weight: { type: Number, default: 0 },
-    max_score: { type: Number, default: 10 },
+    serial: Number,
+    evaluation_criteria: String,
+    grading_scale: String,
+    weight: Number,
+    level_core: [
+      {
+        level: String,
+        min_score: Number,
+        max_score: Number,
+        description: String,
+      },
+    ],
+    note: String,
   },
   { _id: true }
 );
 
 const rubricSchema = new mongoose.Schema(
   {
-    rubric_title: { type: String, required: true },
+    rubric_name: { type: String, required: true },
     rubric_category: {
       type: String,
-      enum: ['instructor', 'reviewer'],
+      enum: ['instructor', 'reviewer', 'assembly'],
       required: true,
     },
     rubric_topic_category: {
       type: mongoose.Schema.Types.ObjectId,
       ref: 'TopicCategory',
     },
-    rubric_template: { type: Boolean, default: false },
     rubric_evaluations: [rubricEvaluationSchema],
-    created_by: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
-    created_at: { type: Date, default: Date.now },
-    updated_at: { type: Date, default: Date.now },
+    rubric_note: String,
+    rubric_template: { type: Boolean, default: false },
   },
   {
-    timestamps: true,
+    timestamps: { createdAt: 'created_at', updatedAt: 'updated_at' },
   }
 );
-
-rubricSchema.pre('save', function (next) {
-  this.updated_at = Date.now();
-  next();
-});
 
 module.exports = mongoose.model('Rubric', rubricSchema);

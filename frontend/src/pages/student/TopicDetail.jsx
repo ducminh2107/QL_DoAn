@@ -21,6 +21,9 @@ import {
   DialogContent,
   DialogActions,
   TextField,
+  Stack,
+  useTheme,
+  alpha,
 } from "@mui/material";
 import {
   ArrowBack as ArrowBackIcon,
@@ -37,6 +40,7 @@ import toast from "react-hot-toast";
 const TopicDetail = () => {
   const { id } = useParams();
   const navigate = useNavigate();
+  const theme = useTheme();
   const [loading, setLoading] = useState(true);
   const [topic, setTopic] = useState(null);
   const [registerDialog, setRegisterDialog] = useState(false);
@@ -99,7 +103,7 @@ const TopicDetail = () => {
   }
 
   return (
-    <Container maxWidth="lg" sx={{ mt: 3, mb: 4 }}>
+    <Container maxWidth="xl" sx={{ mt: 4, mb: 8 }}>
       {/* Back Button */}
       <Button
         startIcon={<ArrowBackIcon />}
@@ -181,137 +185,231 @@ const TopicDetail = () => {
           </Grid>
         </Grid>
 
-        <Divider sx={{ my: 3 }} />
+        {/* Details Section */}
+        <Box sx={{ mb: 4 }}>
+          {/* Description */}
+          <Box mb={4}>
+            <Typography
+              variant="h6"
+              gutterBottom
+              sx={{
+                display: "flex",
+                alignItems: "center",
+                fontWeight: 800,
+                color: "#1E293B",
+              }}
+            >
+              <DescriptionIcon sx={{ mr: 1, color: "primary.main" }} /> Mô tả đề
+              tài
+            </Typography>
+            <Paper
+              elevation={0}
+              sx={{
+                p: 3,
+                bgcolor: "#F8FAFC",
+                borderRadius: "20px",
+                border: "1px solid #E2E8F0",
+              }}
+            >
+              <Typography
+                variant="body1"
+                sx={{
+                  whiteSpace: "pre-line",
+                  color: "#475569",
+                  lineHeight: 1.7,
+                }}
+              >
+                {topic.topic_description}
+              </Typography>
+            </Paper>
+          </Box>
 
-        {/* Main Content */}
-        <Grid container spacing={4}>
-          {/* Left Column - Topic Details */}
-          <Grid item xs={12} md={8}>
-            {/* Description */}
+          {/* Advisor Request (if any) */}
+          {topic.topic_advisor_request && (
             <Box mb={4}>
               <Typography
                 variant="h6"
                 gutterBottom
-                sx={{ display: "flex", alignItems: "center" }}
+                sx={{ fontWeight: 800, color: "#1E293B" }}
               >
-                <DescriptionIcon sx={{ mr: 1 }} /> Mô tả đề tài
+                Yêu cầu từ giảng viên
               </Typography>
-              <Paper variant="outlined" sx={{ p: 2, bgcolor: "grey.50" }}>
-                <Typography variant="body1" style={{ whiteSpace: "pre-line" }}>
-                  {topic.topic_description}
+              <Paper
+                elevation={0}
+                sx={{
+                  p: 3,
+                  bgcolor: alpha(theme.palette.warning.main, 0.1),
+                  borderRadius: "20px",
+                  border: `1px solid ${alpha(theme.palette.warning.main, 0.2)}`,
+                  color: theme.palette.warning.dark,
+                }}
+              >
+                <Typography variant="body1" sx={{ fontWeight: 600 }}>
+                  {topic.topic_advisor_request}
                 </Typography>
               </Paper>
             </Box>
+          )}
 
-            {/* Advisor Request (if any) */}
-            {topic.topic_advisor_request && (
-              <Box mb={4}>
-                <Typography variant="h6" gutterBottom>
-                  Yêu cầu từ giảng viên
-                </Typography>
-                <Paper
-                  variant="outlined"
-                  sx={{ p: 2, bgcolor: "warning.light" }}
-                >
-                  <Typography variant="body1">
-                    {topic.topic_advisor_request}
-                  </Typography>
-                </Paper>
-              </Box>
-            )}
-
-            {/* Defense Info (if available) */}
-            {(topic.topic_date || topic.topic_room) && (
-              <Box mb={4}>
-                <Typography
-                  variant="h6"
-                  gutterBottom
-                  sx={{ display: "flex", alignItems: "center" }}
-                >
-                  <ScheduleIcon sx={{ mr: 1 }} /> Thông tin bảo vệ
-                </Typography>
-                <Grid container spacing={2}>
-                  {topic.topic_date && (
-                    <Grid item xs={6}>
-                      <Paper variant="outlined" sx={{ p: 2 }}>
-                        <Typography variant="body2" color="text.secondary">
-                          Ngày bảo vệ
-                        </Typography>
-                        <Typography variant="body1">
-                          {new Date(topic.topic_date).toLocaleDateString(
-                            "vi-VN",
-                          )}
-                        </Typography>
-                      </Paper>
-                    </Grid>
-                  )}
-                  {topic.topic_room && (
-                    <Grid item xs={6}>
-                      <Paper variant="outlined" sx={{ p: 2 }}>
-                        <Typography variant="body2" color="text.secondary">
-                          Phòng
-                        </Typography>
-                        <Typography variant="body1">
-                          {topic.topic_room}
-                        </Typography>
-                      </Paper>
-                    </Grid>
-                  )}
-                </Grid>
-              </Box>
-            )}
-          </Grid>
-
-          {/* Right Column - Side Info */}
-          <Grid item xs={12} md={4}>
-            {/* Instructor Info */}
-            <Paper sx={{ p: 2, mb: 3 }}>
+          {/* Defense Info (if available) */}
+          {(topic.topic_date || topic.topic_room) && (
+            <Box mb={4}>
               <Typography
                 variant="h6"
                 gutterBottom
-                sx={{ display: "flex", alignItems: "center" }}
+                sx={{
+                  display: "flex",
+                  alignItems: "center",
+                  fontWeight: 800,
+                }}
               >
-                <PersonIcon sx={{ mr: 1 }} /> Giảng viên hướng dẫn
+                <ScheduleIcon sx={{ mr: 1, color: "primary.main" }} /> Thông tin
+                bảo vệ
+              </Typography>
+              <Grid container spacing={2}>
+                {topic.topic_date && (
+                  <Grid item xs={12} sm={6}>
+                    <Paper
+                      elevation={0}
+                      sx={{
+                        p: 2,
+                        borderRadius: "16px",
+                        border: "1px solid #E2E8F0",
+                      }}
+                    >
+                      <Typography variant="caption" color="text.secondary">
+                        Ngày bảo vệ
+                      </Typography>
+                      <Typography variant="body1" sx={{ fontWeight: 700 }}>
+                        {new Date(topic.topic_date).toLocaleDateString("vi-VN")}
+                      </Typography>
+                    </Paper>
+                  </Grid>
+                )}
+                {topic.topic_room && (
+                  <Grid item xs={12} sm={6}>
+                    <Paper
+                      elevation={0}
+                      sx={{
+                        p: 2,
+                        borderRadius: "16px",
+                        border: "1px solid #E2E8F0",
+                      }}
+                    >
+                      <Typography variant="caption" color="text.secondary">
+                        Phòng
+                      </Typography>
+                      <Typography variant="body1" sx={{ fontWeight: 700 }}>
+                        {topic.topic_room}
+                      </Typography>
+                    </Paper>
+                  </Grid>
+                )}
+              </Grid>
+            </Box>
+          )}
+        </Box>
+
+        <Divider sx={{ my: 4 }} />
+
+        {/* Info Cards Row */}
+        <Grid container spacing={4} sx={{ mt: 2 }}>
+          {/* Instructor Info */}
+          <Grid item xs={12} md={4}>
+            <Paper
+              elevation={0}
+              sx={{
+                p: 3,
+                height: "100%",
+                borderRadius: "20px",
+                border: "1px solid #E2E8F0",
+                bgcolor: "#F8FAFC",
+              }}
+            >
+              <Typography
+                variant="subtitle1"
+                sx={{
+                  fontWeight: 800,
+                  mb: 2,
+                  display: "flex",
+                  alignItems: "center",
+                  color: "#1E293B",
+                }}
+              >
+                <PersonIcon sx={{ mr: 1, color: "primary.main" }} /> Giảng viên
+                hướng dẫn
               </Typography>
               {topic.topic_instructor ? (
                 <Box display="flex" alignItems="center">
-                  <Avatar sx={{ mr: 2 }}>
+                  <Avatar
+                    sx={{
+                      mr: 2,
+                      width: 50,
+                      height: 50,
+                      bgcolor: "primary.main",
+                      fontSize: "1.2rem",
+                    }}
+                  >
                     {topic.topic_instructor.user_name.charAt(0)}
                   </Avatar>
                   <Box>
-                    <Typography variant="body1" fontWeight={500}>
+                    <Typography variant="body1" sx={{ fontWeight: 700 }}>
                       {topic.topic_instructor.user_name}
                     </Typography>
                     <Typography variant="body2" color="text.secondary">
                       {topic.topic_instructor.email}
                     </Typography>
-                    {topic.topic_instructor.user_phone && (
-                      <Typography variant="body2" color="text.secondary">
-                        {topic.topic_instructor.user_phone}
-                      </Typography>
-                    )}
+                    <Typography variant="caption" color="text.secondary">
+                      {topic.topic_instructor.user_phone || "Mã: GV001"}
+                    </Typography>
                   </Box>
                 </Box>
               ) : (
-                <Alert severity="info">Chưa phân công giảng viên</Alert>
+                <Alert severity="info" sx={{ borderRadius: "12px" }}>
+                  Chưa phân công giảng viên
+                </Alert>
               )}
             </Paper>
+          </Grid>
 
-            {/* Creator Info */}
-            <Paper sx={{ p: 2, mb: 3 }}>
+          {/* Creator Info */}
+          <Grid item xs={12} md={4}>
+            <Paper
+              elevation={0}
+              sx={{
+                p: 3,
+                height: "100%",
+                borderRadius: "20px",
+                border: "1px solid #E2E8F0",
+                bgcolor: "#F8FAFC",
+              }}
+            >
               <Typography
-                variant="h6"
-                gutterBottom
-                sx={{ display: "flex", alignItems: "center" }}
+                variant="subtitle1"
+                sx={{
+                  fontWeight: 800,
+                  mb: 2,
+                  display: "flex",
+                  alignItems: "center",
+                  color: "#1E293B",
+                }}
               >
-                <SchoolIcon sx={{ mr: 1 }} /> Người đề xuất
+                <SchoolIcon sx={{ mr: 1, color: "secondary.main" }} /> Người đề
+                xuất
               </Typography>
               <Box display="flex" alignItems="center">
-                <Avatar sx={{ mr: 2 }}>
+                <Avatar
+                  sx={{
+                    mr: 2,
+                    width: 50,
+                    height: 50,
+                    bgcolor: "secondary.main",
+                  }}
+                >
                   {topic.topic_creator?.user_name?.charAt(0) || "?"}
                 </Avatar>
                 <Box>
-                  <Typography variant="body1" fontWeight={500}>
+                  <Typography variant="body1" sx={{ fontWeight: 700 }}>
                     {topic.topic_creator?.user_name || "Ẩn danh"}
                   </Typography>
                   <Typography variant="body2" color="text.secondary">
@@ -320,53 +418,83 @@ const TopicDetail = () => {
                 </Box>
               </Box>
             </Paper>
+          </Grid>
 
-            {/* Members List */}
-            <Paper sx={{ p: 2 }}>
+          {/* Members List */}
+          <Grid item xs={12} md={4}>
+            <Paper
+              elevation={0}
+              sx={{
+                p: 3,
+                height: "100%",
+                borderRadius: "20px",
+                border: "1px solid #E2E8F0",
+                bgcolor: "#F8FAFC",
+              }}
+            >
               <Typography
-                variant="h6"
-                gutterBottom
-                sx={{ display: "flex", alignItems: "center" }}
+                variant="subtitle1"
+                sx={{
+                  fontWeight: 800,
+                  mb: 2,
+                  display: "flex",
+                  alignItems: "center",
+                  color: "#1E293B",
+                }}
               >
-                <GroupIcon sx={{ mr: 1 }} /> Thành viên (
+                <GroupIcon sx={{ mr: 1, color: "success.main" }} /> Thành viên (
                 {topic.topic_group_student?.length || 0})
               </Typography>
               {topic.topic_group_student &&
               topic.topic_group_student.length > 0 ? (
-                <List dense>
+                <Stack spacing={1}>
                   {topic.topic_group_student.map((member, index) => (
-                    <ListItem key={index}>
-                      <ListItemAvatar>
-                        <Avatar>
-                          {member.student?.user_name?.charAt(0) || "?"}
-                        </Avatar>
-                      </ListItemAvatar>
-                      <ListItemText
-                        primary={member.student?.user_name || "Ẩn danh"}
-                        secondary={
-                          <Box display="flex" alignItems="center">
-                            <Chip
-                              label={
-                                member.status === "approved"
-                                  ? "Đã duyệt"
-                                  : "Chờ duyệt"
-                              }
-                              color={
-                                member.status === "approved"
-                                  ? "success"
-                                  : "warning"
-                              }
-                              size="small"
-                            />
-                            <Typography variant="caption" sx={{ ml: 1 }}>
-                              {member.student?.user_id}
-                            </Typography>
-                          </Box>
+                    <Box
+                      key={index}
+                      display="flex"
+                      alignItems="center"
+                      sx={{
+                        p: 1,
+                        bgcolor: "#fff",
+                        borderRadius: "12px",
+                        border: "1px solid #F1F5F9",
+                      }}
+                    >
+                      <Avatar
+                        sx={{
+                          width: 32,
+                          height: 32,
+                          mr: 1.5,
+                          fontSize: "0.8rem",
+                        }}
+                      >
+                        {member.student?.user_name?.charAt(0) || "?"}
+                      </Avatar>
+                      <Box sx={{ flexGrow: 1 }}>
+                        <Typography variant="body2" sx={{ fontWeight: 600 }}>
+                          {member.student?.user_name || "Ẩn danh"}
+                        </Typography>
+                        <Typography variant="caption" color="text.secondary">
+                          {member.student?.user_id}
+                        </Typography>
+                      </Box>
+                      <Chip
+                        label={
+                          member.status === "approved" ? "Đã duyệt" : "Chờ"
                         }
+                        size="small"
+                        color={
+                          member.status === "approved" ? "success" : "warning"
+                        }
+                        sx={{
+                          height: 20,
+                          fontSize: "0.65rem",
+                          fontWeight: 700,
+                        }}
                       />
-                    </ListItem>
+                    </Box>
                   ))}
-                </List>
+                </Stack>
               ) : (
                 <Typography variant="body2" color="text.secondary">
                   Chưa có thành viên nào

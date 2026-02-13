@@ -17,6 +17,12 @@ const StudentDashboard = lazy(() => import("./pages/student/Dashboard"));
 const StudentTopics = lazy(() => import("./pages/student/Topics"));
 const ProposeTopic = lazy(() => import("./pages/student/ProposeTopic"));
 const TopicDetail = lazy(() => import("./pages/student/TopicDetail"));
+const MyTopics = lazy(() => import("./pages/student/MyTopics"));
+const RegistrationHistory = lazy(
+  () => import("./pages/student/RegistrationHistory"),
+);
+const TopicProgress = lazy(() => import("./pages/student/TopicProgress"));
+const Grades = lazy(() => import("./pages/student/Grades"));
 
 // Layout components
 // Teacher pages
@@ -24,7 +30,7 @@ const TeacherDashboard = lazy(() => import("./pages/teacher/Dashboard"));
 const TeacherTopics = lazy(() => import("./pages/teacher/Topics"));
 const TopicApprovals = lazy(() => import("./pages/teacher/TopicApprovals"));
 const StudentRegistrations = lazy(
-  () => import("./pages/teacher/StudentRegistrations")
+  () => import("./pages/teacher/StudentRegistrations"),
 );
 const GradingPage = lazy(() => import("./pages/teacher/Grading"));
 const TeacherTopicDetail = lazy(() => import("./pages/teacher/TopicDetail"));
@@ -32,6 +38,19 @@ const TeacherTopicEdit = lazy(() => import("./pages/teacher/TopicEdit"));
 const TeacherTopicCreate = lazy(() => import("./pages/teacher/TopicCreate"));
 const GuidedStudents = lazy(() => import("./pages/teacher/GuidedStudents"));
 const Notifications = lazy(() => import("./pages/teacher/Notifications"));
+
+// Admin pages
+const AdminLayout = lazy(() => import("./components/layout/AdminLayout"));
+const AdminDashboard = lazy(() => import("./pages/admin/Dashboard"));
+const UserManagement = lazy(() => import("./pages/admin/UserManagement"));
+const SemesterManagement = lazy(
+  () => import("./pages/admin/SemesterManagement"),
+);
+const PeriodManagement = lazy(
+  () => import("./pages/admin/RegistrationPeriodManagement"),
+);
+const CouncilManagement = lazy(() => import("./pages/admin/CouncilManagement"));
+const RubricManagement = lazy(() => import("./pages/admin/RubricManagement"));
 
 // Layout components
 const MainLayout = lazy(() => import("./components/layout/MainLayout"));
@@ -121,6 +140,50 @@ function AppRoutes() {
             <ProtectedRoute roles={["student"]}>
               <MainLayout>
                 <TopicDetail />
+              </MainLayout>
+            </ProtectedRoute>
+          }
+        />
+
+        <Route
+          path="/student/my-topics"
+          element={
+            <ProtectedRoute roles={["student"]}>
+              <MainLayout>
+                <MyTopics />
+              </MainLayout>
+            </ProtectedRoute>
+          }
+        />
+
+        <Route
+          path="/student/registration-history"
+          element={
+            <ProtectedRoute roles={["student"]}>
+              <MainLayout>
+                <RegistrationHistory />
+              </MainLayout>
+            </ProtectedRoute>
+          }
+        />
+
+        <Route
+          path="/student/progress"
+          element={
+            <ProtectedRoute roles={["student"]}>
+              <MainLayout>
+                <TopicProgress />
+              </MainLayout>
+            </ProtectedRoute>
+          }
+        />
+
+        <Route
+          path="/student/grades"
+          element={
+            <ProtectedRoute roles={["student"]}>
+              <MainLayout>
+                <Grades />
               </MainLayout>
             </ProtectedRoute>
           }
@@ -226,17 +289,25 @@ function AppRoutes() {
           }
         />
 
-        {/* Admin routes (để sau) */}
+        {/* Admin routes */}
         <Route
           path="/admin"
           element={
             <ProtectedRoute roles={["admin"]}>
-              <MainLayout>
-                <div>Admin Dashboard (Coming Soon)</div>
-              </MainLayout>
+              <AdminLayout />
             </ProtectedRoute>
           }
-        />
+        >
+          <Route index element={<Navigate to="/admin/dashboard" replace />} />
+          <Route path="dashboard" element={<AdminDashboard />} />
+          <Route path="users" element={<UserManagement />} />
+          <Route path="semesters" element={<SemesterManagement />} />
+          <Route path="registration-periods" element={<PeriodManagement />} />
+          <Route path="councils" element={<CouncilManagement />} />
+          <Route path="rubrics" element={<RubricManagement />} />
+          <Route path="reports" element={<div>Báo cáo sắp ra mắt</div>} />
+          <Route path="settings" element={<div>Cài đặt sắp ra mắt</div>} />
+        </Route>
 
         {/* 404 */}
         <Route path="*" element={<NotFound />} />

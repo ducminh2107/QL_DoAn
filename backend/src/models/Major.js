@@ -2,41 +2,38 @@ const mongoose = require('mongoose');
 
 const majorSchema = new mongoose.Schema(
   {
+    major_faculty: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'Faculty',
+      required: [true, 'Khoa quan ly la bat buoc'],
+    },
     major_title: {
       type: String,
-      required: [true, 'Tên ngành là bắt buộc'],
+      required: [true, 'Ten nganh la bat buoc'],
       unique: true,
       trim: true,
-      maxlength: [200, 'Tên ngành không quá 200 ký tự'],
+      maxlength: [200, 'Ten nganh khong qua 200 ky tu'],
     },
     major_description: {
       type: String,
       trim: true,
-      maxlength: [1000, 'Mô tả không quá 1000 ký tự'],
+      maxlength: [1000, 'Mo ta khong qua 1000 ky tu'],
     },
+    training_system: {
+      type: String,
+      enum: ['chinh_quy', 'lien_thong'],
+      default: 'chinh_quy',
+    },
+
     major_code: {
       type: String,
       unique: true,
       uppercase: true,
       trim: true,
     },
-
-    // References
-    major_faculty: {
-      type: mongoose.Schema.Types.ObjectId,
-      ref: 'Faculty',
-      required: [true, 'Khoa quản lý là bắt buộc'],
-    },
     department_head: {
       type: mongoose.Schema.Types.ObjectId,
       ref: 'User',
-    },
-
-    // Training information
-    training_system: {
-      type: String,
-      enum: ['chính_quy', 'liên_thông', 'tại_chức', 'chất_lượng_cao'],
-      default: 'chính_quy',
     },
     duration_years: {
       type: Number,
@@ -50,8 +47,6 @@ const majorSchema = new mongoose.Schema(
       max: 200,
       default: 140,
     },
-
-    // Statistics
     total_students: {
       type: Number,
       default: 0,
@@ -64,23 +59,13 @@ const majorSchema = new mongoose.Schema(
       type: Number,
       default: 0,
     },
-
     is_active: {
       type: Boolean,
       default: true,
     },
-
-    created_at: {
-      type: Date,
-      default: Date.now,
-    },
-    updated_at: {
-      type: Date,
-      default: Date.now,
-    },
   },
   {
-    timestamps: true,
+    timestamps: { createdAt: 'created_at', updatedAt: 'updated_at' },
   }
 );
 
@@ -89,7 +74,6 @@ majorSchema.index({ major_code: 1 }, { unique: true });
 majorSchema.index({ major_faculty: 1 });
 majorSchema.index({ is_active: 1 });
 
-// Virtual for faculty name
 majorSchema.virtual('faculty_name').get(async function () {
   if (this.populated('major_faculty')) {
     return this.major_faculty.faculty_title;

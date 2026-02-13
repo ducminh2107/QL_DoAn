@@ -12,6 +12,7 @@ const { sanitizeUser, getPagination } = require('../../utils/helpers');
 const getTeacherTopics = async (req, res, next) => {
   try {
     const teacherId = req.user.id;
+    console.log(`🔍 getTeacherTopics called for ${teacherId}`);
     const page = parseInt(req.query.page) || 1;
     const limit = parseInt(req.query.limit) || 10;
     const skip = (page - 1) * limit;
@@ -121,12 +122,17 @@ const createTopic = async (req, res, next) => {
     } = req.body;
 
     // Ensure topic_registration_period is set: use provided, else pick an active registration period
-    let registrationPeriodId = req.body.topic_registration_period;
-    if (!registrationPeriodId) {
+    let registrationPeriodCode = req.body.topic_registration_period;
+    let registrationPeriodRef = req.body.topic_registration_period_ref;
+    if (!registrationPeriodCode || !registrationPeriodRef) {
       const activePeriod = await RegistrationPeriod.findOne({
         registration_period_status: 'active',
       });
-      if (activePeriod) registrationPeriodId = activePeriod._id;
+      if (activePeriod) {
+        registrationPeriodCode =
+          registrationPeriodCode || activePeriod.registration_period_semester;
+        registrationPeriodRef = registrationPeriodRef || activePeriod._id;
+      }
     }
 
     // Create topic with teacher as instructor and auto-approved
@@ -135,9 +141,12 @@ const createTopic = async (req, res, next) => {
       topic_description,
       topic_category,
       topic_major: topic_major || teacher.user_major || topic_category,
-      topic_registration_period: registrationPeriodId,
+      topic_registration_period: registrationPeriodCode,
+      topic_registration_period_ref: registrationPeriodRef,
       topic_creator: teacherId,
+      topic_creator_id: teacher.user_id,
       topic_instructor: teacherId,
+      topic_instructor_id: teacher.user_id,
       topic_max_members,
       topic_advisor_request,
       topic_teacher_status: 'approved', // Teacher-created topics auto-approved
@@ -313,7 +322,7 @@ const approveTopic = async (req, res, next) => {
     const topicId = req.params.id;
     const { status, feedback } = req.body;
 
-    if (!['approved', 'rejected', 'need_revision'].includes(status)) {
+    if (!['approved', 'rejected'].includes(status)) {
       return res.status(400).json({
         success: false,
         message: 'Trạng thái không hợp lệ',
@@ -349,10 +358,13 @@ const approveTopic = async (req, res, next) => {
     await topic.save();
 
     // Create notification for student
+    const creator = await User.findById(topic.topic_creator).select(
+      'user_id user_name'
+    );
     const notification = await Notification.create({
       user_notification_title: `Đề tài "${topic.topic_title}" đã được ${status === 'approved' ? 'duyệt' : status === 'rejected' ? 'từ chối' : 'yêu cầu chỉnh sửa'}`,
-      user_notification_sender: teacherId,
-      user_notification_recipient: topic.topic_creator,
+      user_notification_sender: req.user.user_id,
+      user_notification_recipient: creator?.user_id || '',
       user_notification_content:
         feedback ||
         `Giảng viên đã ${status === 'approved' ? 'duyệt' : status === 'rejected' ? 'từ chối' : 'yêu cầu chỉnh sửa'} đề tài của bạn.`,

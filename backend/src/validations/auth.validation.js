@@ -70,11 +70,22 @@ const authValidation = {
   // Update profile validation
   updateProfile: Joi.object({
     user_name: Joi.string(),
-    user_phone: Joi.string().pattern(/^[0-9]{10,11}$/),
-    user_date_of_birth: Joi.date(),
-    user_permanent_address: Joi.string(),
-    user_temporary_address: Joi.string(),
-    user_avatar: Joi.string(),
+    user_phone: Joi.string().allow('', null),
+    user_date_of_birth: Joi.date().allow('', null),
+    user_permanent_address: Joi.string().allow('', null),
+    user_temporary_address: Joi.string().allow('', null),
+    user_avatar: Joi.string().allow('', null),
+    user_gender: Joi.string().valid('Nam', 'Nữ', 'Khác').allow('', null),
+    user_ethnicity: Joi.string().allow('', null),
+    user_religion: Joi.string().allow('', null),
+    user_birth_place: Joi.string().allow('', null),
+    user_nationality: Joi.string().allow('', null),
+    user_class: Joi.string().allow('', null),
+    user_training_system: Joi.string().allow('', null),
+    user_academic_year: Joi.string().allow('', null),
+    user_faculty: Joi.string().allow('', null),
+    user_major: Joi.string().allow('', null),
+    user_CCCD: Joi.string().allow('', null),
   }),
 };
 

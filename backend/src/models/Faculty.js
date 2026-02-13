@@ -4,16 +4,23 @@ const facultySchema = new mongoose.Schema(
   {
     faculty_title: {
       type: String,
-      required: [true, 'Tên khoa là bắt buộc'],
+      required: [true, 'Ten khoa la bat buoc'],
       unique: true,
       trim: true,
-      maxlength: [200, 'Tên khoa không quá 200 ký tự'],
+      maxlength: [200, 'Ten khoa khong qua 200 ky tu'],
     },
     faculty_description: {
       type: String,
       trim: true,
-      maxlength: [1000, 'Mô tả không quá 1000 ký tự'],
+      maxlength: [1000, 'Mo ta khong qua 1000 ky tu'],
     },
+    faculty_majors: [
+      {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'Major',
+      },
+    ],
+
     faculty_code: {
       type: String,
       unique: true,
@@ -26,8 +33,6 @@ const facultySchema = new mongoose.Schema(
     },
     contact_email: String,
     contact_phone: String,
-
-    // Academic information
     total_majors: {
       type: Number,
       default: 0,
@@ -40,23 +45,13 @@ const facultySchema = new mongoose.Schema(
       type: Number,
       default: 0,
     },
-
     is_active: {
       type: Boolean,
       default: true,
     },
-
-    created_at: {
-      type: Date,
-      default: Date.now,
-    },
-    updated_at: {
-      type: Date,
-      default: Date.now,
-    },
   },
   {
-    timestamps: true,
+    timestamps: { createdAt: 'created_at', updatedAt: 'updated_at' },
   }
 );
 

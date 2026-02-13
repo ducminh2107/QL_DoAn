@@ -8,46 +8,39 @@ const notificationSchema = new mongoose.Schema(
       trim: true,
     },
     user_notification_sender: {
-      type: mongoose.Schema.Types.ObjectId,
-      ref: 'User',
+      type: String,
+      trim: true,
     },
     user_notification_recipient: {
-      type: mongoose.Schema.Types.ObjectId,
-      ref: 'User',
+      type: String,
       required: true,
+      trim: true,
     },
     user_notification_content: {
       type: String,
+      required: true,
     },
     user_notification_type: {
       type: String,
-      enum: ['system', 'message', 'reminder', 'info'],
+      enum: ['system', 'personal'],
       default: 'system',
     },
-    metadata: {
-      type: mongoose.Schema.Types.Mixed,
-    },
-    is_read: {
+    user_notification_isRead: {
       type: Boolean,
       default: false,
     },
-    created_at: {
-      type: Date,
-      default: Date.now,
-    },
-    updated_at: {
-      type: Date,
-      default: Date.now,
+    user_notification_topic: {
+      type: String,
+      trim: true,
     },
   },
   {
-    timestamps: true,
+    timestamps: { createdAt: 'created_at', updatedAt: 'updated_at' },
   }
 );
 
-notificationSchema.pre('save', function (next) {
-  this.updated_at = Date.now();
-  next();
-});
-
-module.exports = mongoose.model('Notification', notificationSchema);
+module.exports = mongoose.model(
+  'Notification',
+  notificationSchema,
+  'usernotifications'
+);

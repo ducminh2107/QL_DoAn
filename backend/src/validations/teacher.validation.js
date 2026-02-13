@@ -22,7 +22,7 @@ const teacherValidation = {
 
   // Topic approval
   approveTopic: Joi.object({
-    status: Joi.string().valid('approved', 'rejected', 'need_revision').required(),
+    status: Joi.string().valid('approved', 'rejected').required(),
     feedback: Joi.string().max(1000)
   }),
 

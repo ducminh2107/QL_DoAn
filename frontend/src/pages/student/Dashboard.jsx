@@ -8,33 +8,47 @@ import {
   Button,
   Card,
   CardContent,
-  CardActions,
   Chip,
   LinearProgress,
+  Avatar,
+  IconButton,
+  Tooltip,
+  Stack,
+  useTheme,
+  alpha,
   Divider,
-  Alert,
 } from "@mui/material";
 import {
   School as SchoolIcon,
   Assignment as AssignmentIcon,
-  Group as GroupIcon,
   Schedule as ScheduleIcon,
+  NotificationsActive as NotifIcon,
+  ArrowForward as ArrowIcon,
+  Star as StarIcon,
+  Event as EventIcon,
+  ChevronRight as ChevronRightIcon,
+  CheckCircle as CheckCircleIcon,
+  AutoAwesome as SparkleIcon,
 } from "@mui/icons-material";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../../contexts/AuthContext";
 import axios from "axios";
-import toast from "react-hot-toast";
 
 const StudentDashboard = () => {
   const navigate = useNavigate();
+  const theme = useTheme();
   const { user } = useAuth();
   const [loading, setLoading] = useState(true);
   const [dashboardData, setDashboardData] = useState({
     currentTopic: null,
     registrationStatus: null,
     upcomingDeadlines: [],
-    statistics: {},
-    notifications: [],
+    statistics: {
+      total_topics: 0,
+      registered_topics: 0,
+      completed_milestones: 0,
+      progress_percentage: 0,
+    },
   });
 
   useEffect(() => {
@@ -43,11 +57,9 @@ const StudentDashboard = () => {
 
   const loadDashboardData = async () => {
     try {
-      // In real implementation, you would have a dedicated dashboard endpoint
-      // For now, we'll make multiple requests
       const [topicRes, statsRes] = await Promise.all([
         axios.get("/api/student/my-topic"),
-        axios.get("/api/student/statistics"), // You need to create this endpoint
+        axios.get("/api/student/statistics"),
       ]);
 
       setDashboardData({
@@ -56,15 +68,20 @@ const StudentDashboard = () => {
           ? "registered"
           : "not_registered",
         upcomingDeadlines: [
-          { title: "Báo cáo tiến độ 1", date: "2024-04-15", type: "progress" },
-          { title: "Nộp đề cương", date: "2024-03-01", type: "proposal" },
+          {
+            title: "Báo cáo tiến độ 1",
+            date: "2024-04-15",
+            type: "progress",
+            urgent: true,
+          },
+          {
+            title: "Hoàn thiện đề cương",
+            date: "2024-03-25",
+            type: "proposal",
+            urgent: false,
+          },
         ],
-        statistics: statsRes.data.data || {
-          total_topics: 0,
-          registered_topics: 0,
-          completed_milestones: 0,
-          pending_tasks: 3,
-        },
+        statistics: statsRes.data.data,
       });
     } catch (error) {
       console.error("Failed to load dashboard data:", error);
@@ -73,301 +90,562 @@ const StudentDashboard = () => {
     }
   };
 
+  const glassCardSx = {
+    background: "rgba(255, 255, 255, 0.8)",
+    backdropFilter: "blur(16px)",
+    borderRadius: "28px",
+    border: "1px solid rgba(255, 255, 255, 0.5)",
+    boxShadow: "0 10px 40px rgba(0, 0, 0, 0.04)",
+    transition: "all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275)",
+    "&:hover": {
+      transform: "translateY(-6px)",
+      boxShadow: "0 20px 60px rgba(0, 0, 0, 0.08)",
+      borderColor: theme.palette.primary.main,
+    },
+  };
+
   if (loading) {
     return (
-      <Container>
-        <LinearProgress />
-      </Container>
+      <Box sx={{ width: "100%", mt: 4, px: 4 }}>
+        <LinearProgress sx={{ borderRadius: 8, height: 8 }} />
+      </Box>
     );
   }
 
   return (
-    <Container maxWidth="lg" sx={{ mt: 4, mb: 4 }}>
-      <Typography variant="h4" gutterBottom sx={{ fontWeight: 600 }}>
-        👋 Xin chào, {user?.user_name || "Sinh viên"}
-      </Typography>
+    <Box
+      sx={{
+        background:
+          "radial-gradient(circle at 0% 0%, #f1f5f9 0%, #f8fafc 100%)",
+        minHeight: "100vh",
+        pb: 8,
+      }}
+    >
+      <Container maxWidth="xl">
+        {/* Top Header */}
+        <Box
+          sx={{
+            display: "flex",
+            justifyContent: "space-between",
+            alignItems: "center",
+            py: 4,
+          }}
+        >
+          <Stack direction="row" spacing={2} alignItems="center">
+            {console.log("Current user in Dashboard:", user)}
+            <Avatar
+              key={user?.user_avatar}
+              src={user?.user_avatar}
+              sx={{
+                width: 64,
+                height: 64,
+                border: `4px solid ${theme.palette.background.paper}`,
+                boxShadow: "0 8px 16px rgba(0,0,0,0.1)",
+              }}
+            >
+              {user?.user_name?.charAt(0)}
+            </Avatar>
+            <Box>
+              <Typography
+                variant="h4"
+                sx={{
+                  fontWeight: 900,
+                  color: "#0f172a",
+                  letterSpacing: "-0.03em",
+                }}
+              >
+                Chào bạn {user?.user_name?.split(" ").pop() || "bạn"},{" "}
+                <SparkleIcon
+                  sx={{ color: "#f59e0b", verticalAlign: "middle" }}
+                />
+              </Typography>
+              <Typography
+                variant="body1"
+                sx={{ color: "#64748b", fontWeight: 500 }}
+              >
+                Cùng nhau hoàn thành đồ án thật tốt nhé!
+              </Typography>
+            </Box>
+          </Stack>
 
-      <Grid container spacing={3}>
-        {/* Welcome Card */}
-        <Grid item xs={12}>
-          <Paper sx={{ p: 3, bgcolor: "primary.light", color: "white" }}>
-            <Grid container alignItems="center" spacing={2}>
-              <Grid item>
-                <SchoolIcon sx={{ fontSize: 60 }} />
-              </Grid>
-              <Grid item xs>
-                <Typography variant="h5" gutterBottom>
-                  Hệ thống Quản lý Đồ án/Luận văn
-                </Typography>
-                <Typography variant="body1">
-                  Chào mừng đến với hệ thống quản lý đề tài.
-                  {dashboardData.currentTopic
-                    ? " Bạn đang tham gia đề tài."
-                    : " Hãy tìm và đăng ký đề tài phù hợp."}
-                </Typography>
-              </Grid>
-              {!dashboardData.currentTopic && (
-                <Grid item>
-                  <Button
-                    variant="contained"
-                    color="secondary"
-                    onClick={() => navigate("/student/topics")}
+          <Stack direction="row" spacing={2}>
+            <Tooltip title="Thông báo mới">
+              <IconButton
+                sx={{
+                  bgcolor: "#fff",
+                  boxShadow: "0 4px 12px rgba(0,0,0,0.05)",
+                  width: 48,
+                  height: 48,
+                }}
+              >
+                <NotifIcon sx={{ color: "#6366f1" }} />
+              </IconButton>
+            </Tooltip>
+          </Stack>
+        </Box>
+
+        <Grid container spacing={4}>
+          {/* Main Content Column */}
+          <Grid item xs={12} lg={8}>
+            <Stack spacing={4}>
+              {/* Hero Banner Area */}
+              <Paper
+                elevation={0}
+                sx={{
+                  p: 5,
+                  borderRadius: "32px",
+                  background: `linear-gradient(135deg, ${theme.palette.primary.main} 0%, ${theme.palette.secondary.main} 100%)`,
+                  color: "#fff",
+                  position: "relative",
+                  overflow: "hidden",
+                  boxShadow: `0 20px 50px ${alpha(theme.palette.primary.main, 0.3)}`,
+                }}
+              >
+                <Box sx={{ position: "relative", zIndex: 2 }}>
+                  <Typography
+                    variant="overline"
+                    sx={{ fontWeight: 800, letterSpacing: 2, opacity: 0.8 }}
                   >
-                    Tìm đề tài ngay
-                  </Button>
-                </Grid>
-              )}
-            </Grid>
-          </Paper>
-        </Grid>
-
-        {/* Quick Stats */}
-        <Grid item xs={12} md={3}>
-          <Card>
-            <CardContent>
-              <Box display="flex" alignItems="center" mb={2}>
-                <AssignmentIcon color="primary" sx={{ mr: 1 }} />
-                <Typography variant="h6">Đề tài</Typography>
-              </Box>
-              <Typography variant="h3" align="center">
-                {dashboardData.statistics.registered_topics || 0}
-              </Typography>
-              <Typography variant="body2" color="text.secondary" align="center">
-                / {dashboardData.statistics.total_topics || 0} đã đăng ký
-              </Typography>
-            </CardContent>
-            <CardActions>
-              <Button size="small" onClick={() => navigate("/student/topics")}>
-                Xem tất cả
-              </Button>
-            </CardActions>
-          </Card>
-        </Grid>
-
-        <Grid item xs={12} md={3}>
-          <Card>
-            <CardContent>
-              <Box display="flex" alignItems="center" mb={2}>
-                <GroupIcon color="primary" sx={{ mr: 1 }} />
-                <Typography variant="h6">Thành viên</Typography>
-              </Box>
-              <Typography variant="h3" align="center">
-                {dashboardData.currentTopic?.topic_group_student?.length || 0}
-              </Typography>
-              <Typography variant="body2" color="text.secondary" align="center">
-                / {dashboardData.currentTopic?.topic_max_members || 1} tối đa
-              </Typography>
-            </CardContent>
-          </Card>
-        </Grid>
-
-        <Grid item xs={12} md={3}>
-          <Card>
-            <CardContent>
-              <Box display="flex" alignItems="center" mb={2}>
-                <ScheduleIcon color="primary" sx={{ mr: 1 }} />
-                <Typography variant="h6">Tiến độ</Typography>
-              </Box>
-              <Typography variant="h3" align="center">
-                {dashboardData.statistics.completed_milestones || 0}
-              </Typography>
-              <Typography variant="body2" color="text.secondary" align="center">
-                / 5 milestone hoàn thành
-              </Typography>
-            </CardContent>
-            {dashboardData.currentTopic && (
-              <CardActions>
-                <Button
-                  size="small"
-                  onClick={() =>
-                    navigate(
-                      `/student/topics/${dashboardData.currentTopic._id}/progress`,
-                    )
-                  }
-                >
-                  Xem chi tiết
-                </Button>
-              </CardActions>
-            )}
-          </Card>
-        </Grid>
-
-        <Grid item xs={12} md={3}>
-          <Card>
-            <CardContent>
-              <Typography variant="h6" gutterBottom>
-                Việc cần làm
-              </Typography>
-              <Typography variant="h3" align="center">
-                {dashboardData.statistics.pending_tasks || 0}
-              </Typography>
-              <Typography variant="body2" color="text.secondary" align="center">
-                công việc đang chờ
-              </Typography>
-            </CardContent>
-          </Card>
-        </Grid>
-
-        {/* Current Topic Status */}
-        <Grid item xs={12}>
-          <Paper sx={{ p: 3 }}>
-            <Typography variant="h6" gutterBottom>
-              Đề tài hiện tại
-            </Typography>
-            {dashboardData.currentTopic ? (
-              <Box>
-                <Typography variant="h5" color="primary" gutterBottom>
-                  {dashboardData.currentTopic.topic_title}
-                </Typography>
-                <Grid container spacing={2} mt={2}>
-                  <Grid item xs={12} md={6}>
-                    <Typography variant="body1">
-                      <strong>Giảng viên hướng dẫn:</strong>{" "}
-                      {dashboardData.currentTopic.topic_instructor?.user_name ||
-                        "Chưa phân công"}
-                    </Typography>
-                    <Typography variant="body1" mt={1}>
-                      <strong>Trạng thái:</strong>{" "}
-                      <Chip
-                        label={
-                          dashboardData.currentTopic.topic_teacher_status ===
-                          "approved"
-                            ? "Đã duyệt"
-                            : "Chờ duyệt"
-                        }
-                        color={
-                          dashboardData.currentTopic.topic_teacher_status ===
-                          "approved"
-                            ? "success"
-                            : "warning"
-                        }
-                        size="small"
-                      />
-                    </Typography>
-                  </Grid>
-                  <Grid item xs={12} md={6}>
-                    <Button
-                      variant="outlined"
-                      onClick={() =>
-                        navigate(
-                          `/student/topics/${dashboardData.currentTopic._id}`,
-                        )
-                      }
-                      sx={{ mr: 2 }}
-                    >
-                      Xem chi tiết
-                    </Button>
-                    <Button
-                      variant="contained"
-                      onClick={() =>
-                        navigate(
-                          `/student/topics/${dashboardData.currentTopic._id}/progress`,
-                        )
-                      }
-                    >
-                      Cập nhật tiến độ
-                    </Button>
-                  </Grid>
-                </Grid>
-              </Box>
-            ) : (
-              <Alert severity="info">
-                Bạn chưa có đề tài nào. Hãy tìm và đăng ký đề tài phù hợp với
-                chuyên ngành của bạn.
-                <Button
-                  variant="contained"
-                  sx={{ ml: 2 }}
-                  onClick={() => navigate("/student/topics")}
-                >
-                  Tìm đề tài
-                </Button>
-              </Alert>
-            )}
-          </Paper>
-        </Grid>
-
-        {/* Upcoming Deadlines */}
-        <Grid item xs={12} md={6}>
-          <Paper sx={{ p: 3 }}>
-            <Typography variant="h6" gutterBottom>
-              Deadline sắp tới
-            </Typography>
-            {dashboardData.upcomingDeadlines.length > 0 ? (
-              dashboardData.upcomingDeadlines.map((deadline, index) => (
-                <Box key={index} mb={2}>
-                  <Box
-                    display="flex"
-                    justifyContent="space-between"
-                    alignItems="center"
+                    Hệ thống quản lý luận văn v1.0
+                  </Typography>
+                  <Typography
+                    variant="h3"
+                    sx={{ fontWeight: 900, mt: 1, mb: 2, lineHeight: 1.1 }}
                   >
-                    <Typography variant="body1">{deadline.title}</Typography>
-                    <Chip
-                      label={new Date(deadline.date).toLocaleDateString(
-                        "vi-VN",
-                      )}
-                      color="primary"
-                      size="small"
-                    />
-                  </Box>
-                  <Divider sx={{ mt: 1 }} />
+                    {dashboardData.currentTopic
+                      ? "Tiến tới vạch đích!"
+                      : "Sẵn sàng tỏa sáng?"}
+                  </Typography>
+                  <Typography
+                    variant="h6"
+                    sx={{
+                      opacity: 0.9,
+                      fontWeight: 400,
+                      mb: 4,
+                      maxWidth: "500px",
+                    }}
+                  >
+                    {dashboardData.currentTopic
+                      ? "Mọi nỗ lực hôm nay sẽ gặt hái kết quả ngày mai. Hãy cập nhật tiến độ cho giảng viên nhé."
+                      : "Chọn một đề tài ưng ý và bắt đầu hành trình chinh phục những đỉnh cao tri thức mới."}
+                  </Typography>
+
+                  <Stack direction="row" spacing={3}>
+                    {dashboardData.currentTopic ? (
+                      <Button
+                        variant="contained"
+                        size="large"
+                        onClick={() => navigate("/student/progress")}
+                        sx={{
+                          bgcolor: "#fff",
+                          color: theme.palette.primary.main,
+                          px: 4,
+                          py: 2,
+                          borderRadius: "16px",
+                          fontWeight: 800,
+                          "&:hover": {
+                            bgcolor: "#f8fafc",
+                            transform: "scale(1.05)",
+                          },
+                          transition: "all 0.3s",
+                        }}
+                      >
+                        Cập nhật ngay
+                      </Button>
+                    ) : (
+                      <Button
+                        variant="contained"
+                        size="large"
+                        onClick={() => navigate("/student/topics")}
+                        sx={{
+                          bgcolor: "#fff",
+                          color: theme.palette.primary.main,
+                          px: 4,
+                          py: 2,
+                          borderRadius: "16px",
+                          fontWeight: 800,
+                          "&:hover": { bgcolor: "#f8fafc" },
+                        }}
+                      >
+                        Khám phá đề tài
+                      </Button>
+                    )}
+                  </Stack>
                 </Box>
-              ))
-            ) : (
-              <Typography variant="body2" color="text.secondary">
-                Không có deadline nào sắp tới.
-              </Typography>
-            )}
-          </Paper>
-        </Grid>
+                <AssignmentIcon
+                  sx={{
+                    fontSize: 300,
+                    position: "absolute",
+                    right: -40,
+                    bottom: -60,
+                    opacity: 0.1,
+                    transform: "rotate(-20deg)",
+                  }}
+                />
+              </Paper>
 
-        {/* Quick Actions */}
-        <Grid item xs={12} md={6}>
-          <Paper sx={{ p: 3 }}>
-            <Typography variant="h6" gutterBottom>
-              Thao tác nhanh
-            </Typography>
-            <Grid container spacing={2}>
-              <Grid item xs={6}>
-                <Button
-                  variant="outlined"
-                  fullWidth
-                  onClick={() => navigate("/student/topics")}
-                >
-                  Tìm đề tài
-                </Button>
+              {/* Progress Detail vs Stats Grid */}
+              <Grid container spacing={3}>
+                <Grid item xs={12} md={7}>
+                  <Card
+                    sx={{ ...glassCardSx, minHeight: "100%" }}
+                    elevation={0}
+                  >
+                    <CardContent sx={{ p: 4 }}>
+                      <Typography
+                        variant="h6"
+                        sx={{ fontWeight: 800, mb: 3, color: "#1e293b" }}
+                      >
+                        <CheckCircleIcon
+                          color="primary"
+                          sx={{ mr: 1, verticalAlign: "middle" }}
+                        />{" "}
+                        Đề tài hiện có
+                      </Typography>
+
+                      {dashboardData.currentTopic ? (
+                        <Box>
+                          <Typography
+                            variant="h5"
+                            sx={{ fontWeight: 800, color: "#0f172a", mb: 2 }}
+                          >
+                            {dashboardData.currentTopic.topic_title}
+                          </Typography>
+
+                          <Stack direction="row" spacing={1} sx={{ mb: 4 }}>
+                            <Chip
+                              label="Đang thực hiện"
+                              color="primary"
+                              sx={{ fontWeight: 700, borderRadius: "8px" }}
+                            />
+                            <Chip
+                              label={
+                                dashboardData.currentTopic
+                                  .topic_teacher_status === "approved"
+                                  ? "Đã duyệt"
+                                  : "Chờ duyệt"
+                              }
+                              color={
+                                dashboardData.currentTopic
+                                  .topic_teacher_status === "approved"
+                                  ? "success"
+                                  : "warning"
+                              }
+                              variant="outlined"
+                              sx={{ fontWeight: 700, borderRadius: "8px" }}
+                            />
+                          </Stack>
+
+                          <Typography
+                            variant="subtitle2"
+                            sx={{
+                              fontWeight: 700,
+                              color: "#64748b",
+                              mb: 1,
+                              display: "block",
+                            }}
+                          >
+                            Tiến độ hoàn thành
+                          </Typography>
+                          <Box
+                            sx={{
+                              display: "flex",
+                              alignItems: "center",
+                              gap: 3,
+                              mb: 3,
+                            }}
+                          >
+                            <Box sx={{ flexGrow: 1 }}>
+                              <LinearProgress
+                                variant="determinate"
+                                value={
+                                  dashboardData.statistics
+                                    .progress_percentage || 0
+                                }
+                                sx={{
+                                  height: 14,
+                                  borderRadius: 7,
+                                  bgcolor: alpha(
+                                    theme.palette.primary.main,
+                                    0.1,
+                                  ),
+                                  "& .MuiLinearProgress-bar": {
+                                    borderRadius: 7,
+                                  },
+                                }}
+                              />
+                            </Box>
+                            <Typography
+                              variant="h5"
+                              sx={{
+                                fontWeight: 900,
+                                color: theme.palette.primary.main,
+                              }}
+                            >
+                              {dashboardData.statistics.progress_percentage ||
+                                0}
+                              %
+                            </Typography>
+                          </Box>
+
+                          <Divider sx={{ my: 3, borderStyle: "dashed" }} />
+
+                          <Stack
+                            direction="row"
+                            spacing={2}
+                            justifyContent="flex-end"
+                          >
+                            <Button
+                              variant="outlined"
+                              onClick={() =>
+                                navigate(
+                                  `/student/topics/${dashboardData.currentTopic._id}`,
+                                )
+                              }
+                              sx={{
+                                borderRadius: "12px",
+                                px: 3,
+                                fontWeight: 700,
+                              }}
+                            >
+                              Chi tiết
+                            </Button>
+                            <Button
+                              variant="contained"
+                              onClick={() => navigate("/student/progress")}
+                              sx={{
+                                borderRadius: "12px",
+                                px: 4,
+                                fontWeight: 700,
+                                boxShadow: "0 4px 14px 0 rgba(0,118,255,0.39)",
+                              }}
+                            >
+                              Cập nhật
+                            </Button>
+                          </Stack>
+                        </Box>
+                      ) : (
+                        <Box
+                          sx={{
+                            py: 6,
+                            textAlign: "center",
+                            bgcolor: "#f1f5f9",
+                            borderRadius: "24px",
+                          }}
+                        >
+                          <Typography
+                            variant="body1"
+                            sx={{ color: "#64748b", mb: 3, fontWeight: 500 }}
+                          >
+                            Hiện tại bạn chưa đăng ký đề tài nào.
+                          </Typography>
+                          <Button
+                            variant="contained"
+                            onClick={() => navigate("/student/topics")}
+                            sx={{ borderRadius: "12px", fontWeight: 700 }}
+                          >
+                            Đăng ký ngay
+                          </Button>
+                        </Box>
+                      )}
+                    </CardContent>
+                  </Card>
+                </Grid>
+
+                <Grid item xs={12} md={5}>
+                  <Stack spacing={3} sx={{ height: "100%" }}>
+                    <Card sx={glassCardSx} elevation={0}>
+                      <CardContent sx={{ p: 4 }}>
+                        <Stack direction="row" spacing={2} alignItems="center">
+                          <Box
+                            sx={{
+                              p: 2,
+                              borderRadius: "18px",
+                              bgcolor: alpha(theme.palette.primary.main, 0.1),
+                            }}
+                          >
+                            <StarIcon
+                              sx={{ color: theme.palette.primary.main }}
+                            />
+                          </Box>
+                          <Box>
+                            <Typography variant="h4" sx={{ fontWeight: 900 }}>
+                              {dashboardData.statistics.registered_topics || 0}
+                            </Typography>
+                            <Typography
+                              variant="body2"
+                              sx={{ color: "#64748b", fontWeight: 600 }}
+                            >
+                              Đã đăng ký
+                            </Typography>
+                          </Box>
+                        </Stack>
+                      </CardContent>
+                    </Card>
+
+                    <Card sx={glassCardSx} elevation={0}>
+                      <CardContent sx={{ p: 4 }}>
+                        <Stack direction="row" spacing={2} alignItems="center">
+                          <Box
+                            sx={{
+                              p: 2,
+                              borderRadius: "18px",
+                              bgcolor: alpha(theme.palette.success.main, 0.1),
+                            }}
+                          >
+                            <CheckCircleIcon
+                              sx={{ color: theme.palette.success.main }}
+                            />
+                          </Box>
+                          <Box>
+                            <Typography variant="h4" sx={{ fontWeight: 900 }}>
+                              {dashboardData.statistics.completed_milestones ||
+                                0}
+                            </Typography>
+                            <Typography
+                              variant="body2"
+                              sx={{ color: "#64748b", fontWeight: 600 }}
+                            >
+                              Mốc hoàn thành
+                            </Typography>
+                          </Box>
+                        </Stack>
+                      </CardContent>
+                    </Card>
+                  </Stack>
+                </Grid>
               </Grid>
-              <Grid item xs={6}>
-                <Button
-                  variant="outlined"
-                  fullWidth
-                  onClick={() => navigate("/student/topics/propose")}
-                >
-                  Đề xuất đề tài
-                </Button>
-              </Grid>
-              <Grid item xs={6}>
-                <Button
-                  variant="outlined"
-                  fullWidth
-                  onClick={() => navigate("/student/progress")}
-                >
-                  Tiến độ
-                </Button>
-              </Grid>
-              <Grid item xs={6}>
-                <Button
-                  variant="outlined"
-                  fullWidth
-                  onClick={() => navigate("/student/grades")}
-                >
-                  Điểm số
-                </Button>
-              </Grid>
-            </Grid>
-          </Paper>
+            </Stack>
+          </Grid>
+
+          {/* Sidebar Column */}
+          <Grid item xs={12} lg={4}>
+            <Stack spacing={4}>
+              {/* Upcoming Tasks Card */}
+              <Card
+                sx={{
+                  ...glassCardSx,
+                  border: "none",
+                  boxShadow: "0 20px 40px rgba(0,0,0,0.06)",
+                }}
+              >
+                <CardContent sx={{ p: 4 }}>
+                  <Box
+                    sx={{
+                      display: "flex",
+                      justifyContent: "space-between",
+                      alignItems: "center",
+                      mb: 4,
+                    }}
+                  >
+                    <Typography variant="h6" sx={{ fontWeight: 900 }}>
+                      Lịch nhắc nhở
+                    </Typography>
+                    <IconButton size="small" sx={{ bgcolor: "#f1f5f9" }}>
+                      <EventIcon fontSize="small" />
+                    </IconButton>
+                  </Box>
+
+                  <Stack spacing={2}>
+                    {dashboardData.upcomingDeadlines.map((deadline, idx) => (
+                      <Box
+                        key={idx}
+                        sx={{
+                          p: 2.5,
+                          borderRadius: "20px",
+                          bgcolor: deadline.urgent
+                            ? alpha(theme.palette.error.main, 0.05)
+                            : "#f8fafc",
+                          border: `1px solid ${deadline.urgent ? alpha(theme.palette.error.main, 0.2) : "transparent"}`,
+                          transition: "0.3s",
+                          "&:hover": {
+                            bgcolor: deadline.urgent
+                              ? alpha(theme.palette.error.main, 0.08)
+                              : "#f1f5f9",
+                          },
+                        }}
+                      >
+                        <Typography
+                          variant="subtitle2"
+                          sx={{
+                            fontWeight: 800,
+                            color: deadline.urgent ? "#ef4444" : "#1e293b",
+                            mb: 1,
+                          }}
+                        >
+                          {deadline.title}
+                        </Typography>
+                        <Stack direction="row" spacing={1} alignItems="center">
+                          <ScheduleIcon
+                            sx={{ fontSize: 16, color: "#64748b" }}
+                          />
+                          <Typography
+                            variant="caption"
+                            sx={{ color: "#64748b", fontWeight: 600 }}
+                          >
+                            {new Date(deadline.date).toLocaleDateString(
+                              "vi-VN",
+                              { day: "numeric", month: "long" },
+                            )}
+                          </Typography>
+                        </Stack>
+                      </Box>
+                    ))}
+                  </Stack>
+
+                  <Button
+                    fullWidth
+                    variant="text"
+                    sx={{ mt: 2, fontWeight: 700, borderRadius: "12px", py: 1 }}
+                  >
+                    Xem toàn bộ lịch
+                  </Button>
+                </CardContent>
+              </Card>
+
+              {/* Quick Access List */}
+              <Card sx={{ ...glassCardSx, bgcolor: "#1e293b", color: "#fff" }}>
+                <CardContent sx={{ p: 4 }}>
+                  <Typography variant="h6" sx={{ fontWeight: 900, mb: 4 }}>
+                    Tiện ích nhanh
+                  </Typography>
+                  <Stack spacing={1}>
+                    {[
+                      {
+                        title: "Lịch sử đăng ký",
+                        path: "/student/registration-history",
+                      },
+                      { title: "Bảng điểm cá nhân", path: "/student/grades" },
+                      { title: "Hồ sơ của tôi", path: "/profile" },
+                    ].map((link, i) => (
+                      <Button
+                        key={i}
+                        fullWidth
+                        onClick={() => navigate(link.path)}
+                        sx={{
+                          justifyContent: "space-between",
+                          color: "rgba(255,255,255,0.7)",
+                          py: 1.5,
+                          px: 2,
+                          borderRadius: "14px",
+                          "&:hover": {
+                            bgcolor: "rgba(255,255,255,0.1)",
+                            color: "#fff",
+                          },
+                        }}
+                        endIcon={<ChevronRightIcon />}
+                      >
+                        {link.title}
+                      </Button>
+                    ))}
+                  </Stack>
+                </CardContent>
+              </Card>
+            </Stack>
+          </Grid>
         </Grid>
-      </Grid>
-    </Container>
+      </Container>
+    </Box>
   );
 };
 

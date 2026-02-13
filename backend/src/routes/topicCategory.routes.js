@@ -3,11 +3,7 @@ const router = express.Router();
 const topicCategoryController = require('../controllers/topicCategory.controller');
 const { protect } = require('../middleware/auth');
 
-// All topic category APIs require authentication
-router.use(protect);
-
-// GET /api/topic-categories
+// GET /api/topic-categories - Public access (needed for topic creation forms)
 router.get('/', topicCategoryController.getAllCategories);
 
 module.exports = router;
-

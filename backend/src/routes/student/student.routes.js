@@ -1,9 +1,9 @@
 const express = require('express');
 const router = express.Router();
-const topicController = require('../controllers/student/topic.controller');
-const { protect, authorize } = require('../middleware/auth');
-const { validate } = require('../middleware/validation');
-const topicValidation = require('../validations/topic.validation');
+const topicController = require('../../controllers/student/topic.controller');
+const { protect, authorize } = require('../../middleware/auth');
+const { validate } = require('../../middleware/validation');
+const topicValidation = require('../../validations/topic.validation');
 
 // All routes require student authentication
 router.use(protect);
@@ -39,9 +39,21 @@ router.put(
 router.delete('/topics/:id', topicController.deleteProposedTopic);
 
 // My topic and progress
-router.get('/my-topic', topicController.getMyTopic);
+router.get('/my-topics', topicController.getMyTopics);
 
+router.get('/grades', topicController.getGrades);
+
+router.get('/registration-history', topicController.getRegistrationHistory);
+
+router.get('/my-topic', topicController.getMyTopic);
+router.get('/statistics', topicController.getStatistics);
+
+router.get('/topics-progress', topicController.getTopicsProgress);
 router.get('/topics/:id/progress', topicController.getTopicProgress);
+router.put(
+  '/topics/:id/milestones/:milestoneIndex',
+  topicController.submitMilestone
+);
 
 // Add more student routes here as needed
 

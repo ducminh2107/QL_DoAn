@@ -413,6 +413,17 @@ const updateProfile = async (req, res, next) => {
       'user_permanent_address',
       'user_temporary_address',
       'user_avatar',
+      'user_gender',
+      'user_ethnicity',
+      'user_religion',
+      'user_birth_place',
+      'user_nationality',
+      'user_class',
+      'user_training_system',
+      'user_academic_year',
+      'user_faculty',
+      'user_major',
+      'user_CCCD',
     ];
 
     // Filter fields

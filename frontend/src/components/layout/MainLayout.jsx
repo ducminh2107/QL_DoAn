@@ -16,10 +16,8 @@ import {
   ListItemText,
   Divider,
   useTheme,
-  useMediaQuery,
 } from "@mui/material";
 import {
-  Menu as MenuIcon,
   Dashboard as DashboardIcon,
   School as SchoolIcon,
   Assignment as AssignmentIcon,
@@ -28,8 +26,10 @@ import {
   Grade as GradeIcon,
   Person as PersonIcon,
   Logout as LogoutIcon,
-  ChevronLeft as ChevronLeftIcon,
-  ChevronRight as ChevronRightIcon,
+  Assessment as AssessmentIcon,
+  Groups as GroupsIcon,
+  TrendingUp as TrendingUpIcon,
+  History as HistoryIcon,
 } from "@mui/icons-material";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../../contexts/AuthContext";
@@ -40,14 +40,7 @@ const MainLayout = ({ children }) => {
   const { user, logout } = useAuth();
   const navigate = useNavigate();
   const theme = useTheme();
-  const isMobile = useMediaQuery(theme.breakpoints.down("sm"));
-
-  const [open, setOpen] = useState(!isMobile);
   const [anchorEl, setAnchorEl] = useState(null);
-
-  const handleDrawerToggle = () => {
-    setOpen(!open);
-  };
 
   const handleMenuClick = (event) => {
     setAnchorEl(event.currentTarget);
@@ -65,18 +58,41 @@ const MainLayout = ({ children }) => {
   // Navigation items based on role
   const getNavItems = () => {
     const baseItems = [
-      { text: "Dashboard", icon: <DashboardIcon />, path: "/dashboard" },
       { text: "Hồ sơ", icon: <PersonIcon />, path: "/profile" },
     ];
 
     if (user?.role === "student") {
       baseItems.push(
-        { text: "Đề tài của tôi", icon: <AssignmentIcon />, path: "/student" },
+        {
+          text: "Trang chủ",
+          icon: <DashboardIcon />,
+          path: "/student",
+        },
+        {
+          text: "Đề tài của tôi",
+          icon: <AssignmentIcon />,
+          path: "/student/my-topics",
+        },
         {
           text: "Danh sách đề tài",
           icon: <SchoolIcon />,
           path: "/student/topics",
-        }
+        },
+        {
+          text: "Tiến độ đề tài",
+          icon: <CheckCircleIcon />,
+          path: "/student/progress",
+        },
+        {
+          text: "Điểm số & Nhận xét",
+          icon: <GradeIcon />,
+          path: "/student/grades",
+        },
+        {
+          text: "Lịch sử đăng ký",
+          icon: <AssignmentIcon />,
+          path: "/student/registration-history",
+        },
       );
     } else if (user?.role === "teacher") {
       baseItems.push(
@@ -101,7 +117,27 @@ const MainLayout = ({ children }) => {
           icon: <SchoolIcon />,
           path: "/teacher/students/guided",
         },
-        { text: "Chấm điểm", icon: <GradeIcon />, path: "/teacher/grading" }
+        { text: "Chấm điểm", icon: <GradeIcon />, path: "/teacher/grading" },
+        {
+          text: "Đánh giá Rubric",
+          icon: <AssessmentIcon />,
+          path: "/teacher/rubric-evaluation",
+        },
+        {
+          text: "Tham gia Hội Đồng",
+          icon: <GroupsIcon />,
+          path: "/teacher/councils",
+        },
+        {
+          text: "Theo dõi Tiến độ",
+          icon: <TrendingUpIcon />,
+          path: "/teacher/progress",
+        },
+        {
+          text: "Lịch sử Giảng Dạy",
+          icon: <HistoryIcon />,
+          path: "/teacher/history",
+        },
       );
     } else if (user?.role === "admin") {
       baseItems.push({
@@ -115,44 +151,50 @@ const MainLayout = ({ children }) => {
   };
 
   return (
-    <Box sx={{ display: "flex" }}>
-      {/* App Bar */}
+    <Box sx={{ display: "flex", flexDirection: "column", minHeight: "100vh" }}>
+      {/* App Bar - Full Width */}
       <AppBar
         position="fixed"
         sx={{
           zIndex: theme.zIndex.drawer + 1,
           backgroundColor: theme.palette.primary.main,
+          width: "100%",
+          top: 0,
+          left: 0,
         }}
       >
-        <Toolbar>
-          <IconButton
-            color="inherit"
-            edge="start"
-            onClick={handleDrawerToggle}
-            sx={{ mr: 2 }}
+        <Toolbar sx={{ justifyContent: "space-between" }}>
+          <Typography
+            variant="h6"
+            noWrap
+            component="div"
+            sx={{ fontWeight: 700 }}
           >
-            <MenuIcon />
-          </IconButton>
-
-          <Typography variant="h6" noWrap component="div" sx={{ flexGrow: 1 }}>
             Hệ Thống Quản Lý Luận Văn
           </Typography>
 
           {/* User menu */}
-          <Box display="flex" alignItems="center">
+          <Box display="flex" alignItems="center" gap={1}>
             <Typography
               variant="body2"
-              sx={{ mr: 2, display: { xs: "none", sm: "block" } }}
+              sx={{ mr: 1, display: { xs: "none", sm: "block" } }}
             >
               {user?.user_name}
             </Typography>
-            <IconButton onClick={handleMenuClick} sx={{ p: 0 }}>
-              <Avatar>{user?.user_name?.charAt(0) || "U"}</Avatar>
+            <IconButton onClick={handleMenuClick} sx={{ p: 0.5 }}>
+              <Avatar
+                src={user?.user_avatar}
+                sx={{ width: 40, height: 40, fontSize: "1rem" }}
+              >
+                {user?.user_name?.charAt(0) || "U"}
+              </Avatar>
             </IconButton>
             <Menu
               anchorEl={anchorEl}
               open={Boolean(anchorEl)}
               onClose={handleMenuClose}
+              anchorOrigin={{ vertical: "bottom", horizontal: "right" }}
+              transformOrigin={{ vertical: "top", horizontal: "right" }}
             >
               <MenuItem
                 onClick={() => {
@@ -176,85 +218,88 @@ const MainLayout = ({ children }) => {
         </Toolbar>
       </AppBar>
 
-      {/* Sidebar Drawer */}
-      <Drawer
-        variant={isMobile ? "temporary" : "persistent"}
-        open={open}
-        onClose={handleDrawerToggle}
-        sx={{
-          width: drawerWidth,
-          flexShrink: 0,
-          "& .MuiDrawer-paper": {
+      {/* Content Area with Sidebar and Main */}
+      <Box sx={{ display: "flex", flexGrow: 1, mt: "64px" }}>
+        {/* Sidebar Drawer */}
+        <Drawer
+          variant="permanent"
+          sx={{
             width: drawerWidth,
-            boxSizing: "border-box",
-          },
-        }}
-      >
-        <Toolbar>
-          <IconButton onClick={handleDrawerToggle}>
-            {theme.direction === "rtl" ? (
-              <ChevronRightIcon />
-            ) : (
-              <ChevronLeftIcon />
-            )}
-          </IconButton>
-        </Toolbar>
-        <Divider />
-
-        {/* Navigation List */}
-        <List>
-          {getNavItems().map((item) => (
-            <ListItem
-              button
-              key={item.text}
-              onClick={() => navigate(item.path)}
-              sx={{
-                "&:hover": {
-                  backgroundColor: "primary.light",
-                  color: "primary.contrastText",
-                  "& .MuiListItemIcon-root": {
+            flexShrink: 0,
+            "& .MuiDrawer-paper": {
+              width: drawerWidth,
+              boxSizing: "border-box",
+              backgroundColor: "#fafafa",
+              borderRight: "1px solid #e0e0e0",
+            },
+          }}
+        >
+          {/* Navigation List */}
+          <List sx={{ pt: 2 }}>
+            {getNavItems().map((item) => (
+              <ListItem
+                button
+                key={item.text}
+                onClick={() => navigate(item.path)}
+                sx={{
+                  mx: 1,
+                  mb: 0.5,
+                  borderRadius: 1,
+                  transition: "all 0.3s ease",
+                  "&:hover": {
+                    backgroundColor: "primary.light",
                     color: "primary.contrastText",
+                    "& .MuiListItemIcon-root": {
+                      color: "primary.contrastText",
+                    },
                   },
-                },
-              }}
+                }}
+              >
+                <ListItemIcon sx={{ minWidth: 40 }}>{item.icon}</ListItemIcon>
+                <ListItemText primary={item.text} />
+              </ListItem>
+            ))}
+          </List>
+
+          <Divider sx={{ my: 2 }} />
+
+          {/* Role Badge */}
+          <Box sx={{ p: 2, textAlign: "center", mt: "auto" }}>
+            <Typography
+              variant="caption"
+              color="text.secondary"
+              sx={{ fontWeight: 600 }}
             >
-              <ListItemIcon>{item.icon}</ListItemIcon>
-              <ListItemText primary={item.text} />
-            </ListItem>
-          ))}
-        </List>
+              Vai trò:{" "}
+              {user?.role === "admin"
+                ? "Quản trị viên"
+                : user?.role === "teacher"
+                  ? "Giảng viên"
+                  : "Sinh viên"}
+            </Typography>
+            <Typography
+              variant="caption"
+              color="text.secondary"
+              display="block"
+              sx={{ mt: 0.5 }}
+            >
+              Mã: {user?.user_id}
+            </Typography>
+          </Box>
+        </Drawer>
 
-        <Divider />
-
-        {/* Role Badge */}
-        <Box sx={{ p: 2, textAlign: "center" }}>
-          <Typography variant="caption" color="text.secondary">
-            Vai trò:{" "}
-            {user?.role === "admin"
-              ? "Quản trị viên"
-              : user?.role === "teacher"
-                ? "Giảng viên"
-                : "Sinh viên"}
-          </Typography>
-          <Typography variant="caption" color="text.secondary" display="block">
-            Mã: {user?.user_id}
-          </Typography>
+        {/* Main Content */}
+        <Box
+          component="main"
+          sx={{
+            flexGrow: 1,
+            p: 3,
+            backgroundColor: "#f5f5f5",
+            overflowY: "auto",
+          }}
+        >
+          {children || <Outlet />}
         </Box>
-      </Drawer>
-
-      {/* Main Content */}
-      <Box
-        component="main"
-        sx={{
-          flexGrow: 1,
-          p: 3,
-          width: { sm: `calc(100% - ${drawerWidth}px)` },
-          mt: "64px",
-          minHeight: "calc(100vh - 64px)",
-          backgroundColor: "#f5f5f5",
-        }}
-      >
-        {children || <Outlet />}
       </Box>
     </Box>
   );

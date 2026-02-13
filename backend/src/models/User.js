@@ -1,39 +1,38 @@
 const mongoose = require('mongoose');
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
+const crypto = require('crypto');
 
 const userSchema = new mongoose.Schema(
   {
-    // Authentication
     email: {
       type: String,
-      required: [true, 'Email là bắt buộc'],
+      required: [true, 'Email la bat buoc'],
       unique: true,
       lowercase: true,
       trim: true,
       match: [
         /^\w+([\.-]?\w+)*@\w+([\.-]?\w+)*(\.\w{2,3})+$/,
-        'Email không hợp lệ',
+        'Email khong hop le',
       ],
     },
     password: {
       type: String,
-      required: [true, 'Mật khẩu là bắt buộc'],
+      required: [true, 'Mat khau la bat buoc'],
       minlength: 6,
-      select: false, // Không trả về password trong query
+      select: false,
     },
 
-    // User Info
     user_id: {
       type: String,
-      required: [true, 'Mã người dùng là bắt buộc'],
+      required: [true, 'Ma nguoi dung la bat buoc'],
       unique: true,
       uppercase: true,
       trim: true,
     },
     user_name: {
       type: String,
-      required: [true, 'Họ tên là bắt buộc'],
+      required: [true, 'Ho ten la bat buoc'],
       trim: true,
     },
     user_avatar: {
@@ -41,27 +40,36 @@ const userSchema = new mongoose.Schema(
       default:
         'https://res.cloudinary.com/demo/image/upload/v1234567/default-avatar.png',
     },
-
-    // Personal Info
     user_date_of_birth: Date,
     user_CCCD: {
       type: String,
       unique: true,
-      sparse: true, // Cho phép null nhưng vẫn unique
+      sparse: true,
     },
     user_phone: String,
     user_permanent_address: String,
     user_temporary_address: String,
-
-    // Academic Info
     user_department: String,
     user_faculty: String,
     user_major: String,
+    user_gender: {
+      type: String,
+      enum: ['Nam', 'Nữ', 'Khác'],
+    },
+    user_ethnicity: String,
+    user_religion: String,
+    user_birth_place: String,
+    user_nationality: {
+      type: String,
+      default: 'Việt Nam',
+    },
+    user_class: String,
+    user_training_system: String,
+    user_academic_year: String,
 
-    // System
     role: {
       type: String,
-      enum: ['student', 'teacher', 'admin'],
+      enum: ['admin', 'teacher', 'student'],
       default: 'student',
     },
     user_status: {
@@ -72,11 +80,9 @@ const userSchema = new mongoose.Schema(
       type: Number,
       min: 0,
       max: 10,
-      default: 0,
     },
     user_transcript: String,
 
-    // Topic References
     current_topic: {
       type: mongoose.Schema.Types.ObjectId,
       ref: 'Topic',
@@ -102,31 +108,17 @@ const userSchema = new mongoose.Schema(
       },
     ],
 
-    // Tokens for password reset
     resetPasswordToken: String,
     resetPasswordExpire: Date,
-
-    // Refresh token
     refreshToken: String,
-
-    // Timestamps
-    createdAt: {
-      type: Date,
-      default: Date.now,
-    },
-    updatedAt: {
-      type: Date,
-      default: Date.now,
-    },
   },
   {
-    timestamps: true,
+    timestamps: { createdAt: 'created_at', updatedAt: 'updated_at' },
     toJSON: { virtuals: true },
     toObject: { virtuals: true },
   }
 );
 
-// Hash password trước khi save
 userSchema.pre('save', async function (next) {
   if (!this.isModified('password')) return next();
 
@@ -139,18 +131,15 @@ userSchema.pre('save', async function (next) {
   }
 });
 
-// Update updatedAt timestamp
 userSchema.pre('findOneAndUpdate', function (next) {
-  this.set({ updatedAt: Date.now() });
+  this.set({ updated_at: Date.now() });
   next();
 });
 
-// Compare password method
 userSchema.methods.comparePassword = async function (enteredPassword) {
   return await bcrypt.compare(enteredPassword, this.password);
 };
 
-// Generate JWT token
 userSchema.methods.generateAuthToken = function () {
   return jwt.sign(
     {
@@ -164,7 +153,6 @@ userSchema.methods.generateAuthToken = function () {
   );
 };
 
-// Generate refresh token
 userSchema.methods.generateRefreshToken = function () {
   return jwt.sign(
     { id: this._id },
@@ -173,7 +161,6 @@ userSchema.methods.generateRefreshToken = function () {
   );
 };
 
-// Generate password reset token
 userSchema.methods.generatePasswordResetToken = function () {
   const resetToken = crypto.randomBytes(20).toString('hex');
 
@@ -182,17 +169,15 @@ userSchema.methods.generatePasswordResetToken = function () {
     .update(resetToken)
     .digest('hex');
 
-  this.resetPasswordExpire = Date.now() + 10 * 60 * 1000; // 10 phút
+  this.resetPasswordExpire = Date.now() + 10 * 60 * 1000;
 
   return resetToken;
 };
 
-// Virtual for full name (có thể thêm nếu cần)
 userSchema.virtual('fullName').get(function () {
   return this.user_name;
 });
 
-// Indexes
 userSchema.index({ email: 1 }, { unique: true });
 userSchema.index({ user_id: 1 }, { unique: true });
 userSchema.index({ role: 1 });

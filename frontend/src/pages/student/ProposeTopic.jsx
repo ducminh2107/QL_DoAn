@@ -20,6 +20,7 @@ const ProposeTopic = () => {
   const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
   const [categories, setCategories] = useState([]);
+  const [teachers, setTeachers] = useState([]);
   const [form, setForm] = useState({
     topic_title: "",
     topic_description: "",
@@ -29,16 +30,21 @@ const ProposeTopic = () => {
   });
 
   useEffect(() => {
-    const loadCategories = async () => {
+    const fetchData = async () => {
       try {
-        const res = await axios.get("/api/topic-categories");
-        setCategories(res.data.data || []);
+        const [catRes, teacherRes] = await Promise.all([
+          axios.get("/api/topic-categories"),
+          axios.get("/api/users/teachers"),
+        ]);
+        setCategories(catRes.data.data || []);
+        setTeachers(teacherRes.data.data || []);
       } catch (error) {
-        console.error("Failed to load categories", error);
+        console.error("Failed to load data", error);
+        toast.error("Không thể tải danh sách giảng viên hoặc danh mục");
       }
     };
 
-    loadCategories();
+    fetchData();
   }, []);
 
   const handleChange = (field) => (event) => {
@@ -114,15 +120,23 @@ const ProposeTopic = () => {
             onChange={handleChange("topic_max_members")}
           />
 
-          <TextField
-            label="Ghi chú / yêu cầu với giảng viên (tuỳ chọn)"
-            fullWidth
-            margin="normal"
-            multiline
-            minRows={2}
-            value={form.topic_advisor_request}
-            onChange={handleChange("topic_advisor_request")}
-          />
+          <FormControl fullWidth margin="normal">
+            <InputLabel>Giảng viên hướng dẫn mong muốn</InputLabel>
+            <Select
+              value={form.topic_advisor_request}
+              label="Giảng viên hướng dẫn mong muốn"
+              onChange={handleChange("topic_advisor_request")}
+            >
+              <MenuItem value="">
+                <em>-- Chọn giảng viên (tuỳ chọn) --</em>
+              </MenuItem>
+              {teachers.map((teacher) => (
+                <MenuItem key={teacher._id} value={teacher.user_name}>
+                  {teacher.user_name} ({teacher.user_id})
+                </MenuItem>
+              ))}
+            </Select>
+          </FormControl>
 
           <Box mt={3} display="flex" justifyContent="flex-end" gap={2}>
             <Button
@@ -148,4 +162,3 @@ const ProposeTopic = () => {
 };
 
 export default ProposeTopic;
-

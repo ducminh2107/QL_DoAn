@@ -1,8 +1,12 @@
 const express = require('express');
 const router = express.Router();
-const userController = require('../controllers/user.controller');
-const { protect, authorize, canAccessOwnData } = require('../middleware/auth');
-const { validateObjectId } = require('../middleware/validation');
+const userController = require('../../controllers/user.controller');
+const {
+  protect,
+  authorize,
+  canAccessOwnData,
+} = require('../../middleware/auth');
+const { validateObjectId } = require('../../middleware/validation');
 
 // All routes require authentication
 router.use(protect);
@@ -10,6 +14,7 @@ router.use(protect);
 // User can access their own profile
 router.get('/me', userController.getMe);
 router.put('/me', userController.updateProfile);
+router.get('/teachers', userController.getTeachers);
 
 // Admin routes for user management
 router.use(authorize('admin'));

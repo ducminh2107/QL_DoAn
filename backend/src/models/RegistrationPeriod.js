@@ -4,25 +4,23 @@ const registrationPeriodSchema = new mongoose.Schema(
   {
     registration_period_semester: {
       type: String,
-      required: [true, 'Kỳ đăng ký là bắt buộc'],
-      unique: true,
+      required: [true, 'Ky dang ky la bat buoc'],
       trim: true,
     },
     registration_period_start: {
       type: Date,
-      required: [true, 'Ngày bắt đầu là bắt buộc'],
+      required: [true, 'Ngay bat dau bat buoc'],
     },
     registration_period_end: {
       type: Date,
-      required: [true, 'Ngày kết thúc là bắt buộc'],
+      required: [true, 'Ngay ket thuc bat buoc'],
     },
     registration_period_status: {
       type: String,
-      enum: ['upcoming', 'active', 'closed'],
-      default: 'upcoming',
+      enum: ['active', 'closed'],
+      default: 'active',
     },
-
-    // Configuration
+    // Optional legacy config fields (for existing controllers)
     max_topics_per_student: {
       type: Number,
       default: 3,
@@ -41,8 +39,6 @@ const registrationPeriodSchema = new mongoose.Schema(
       type: Boolean,
       default: true,
     },
-
-    // Block specific majors or faculties
     allowed_majors: [
       {
         type: mongoose.Schema.Types.ObjectId,
@@ -55,36 +51,33 @@ const registrationPeriodSchema = new mongoose.Schema(
         ref: 'Faculty',
       },
     ],
-
+    semester_id: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'Semester',
+    },
     block_topic: String,
-
+    topics_allowed: [
+      {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'Topic',
+      },
+    ],
     created_by: {
       type: mongoose.Schema.Types.ObjectId,
       ref: 'User',
     },
-
-    created_at: {
-      type: Date,
-      default: Date.now,
-    },
-    updated_at: {
-      type: Date,
-      default: Date.now,
-    },
   },
   {
-    timestamps: true,
+    timestamps: { createdAt: 'created_at', updatedAt: 'updated_at' },
   }
 );
 
-// Indexes
 registrationPeriodSchema.index({ registration_period_status: 1 });
 registrationPeriodSchema.index({
   registration_period_start: 1,
   registration_period_end: 1,
 });
 
-// Virtual for checking if period is active
 registrationPeriodSchema.virtual('is_active_now').get(function () {
   const now = new Date();
   return (
@@ -94,22 +87,18 @@ registrationPeriodSchema.virtual('is_active_now').get(function () {
   );
 });
 
-// Method to check if student can register
 registrationPeriodSchema.methods.canStudentRegister = function (
   studentMajor,
   studentFaculty
 ) {
-  // Check if period is active
   if (!this.is_active_now || !this.allow_registration) {
     return false;
   }
 
-  // Check if student's major is allowed
   if (this.allowed_majors.length > 0) {
     return this.allowed_majors.includes(studentMajor);
   }
 
-  // Check if student's faculty is allowed
   if (this.allowed_faculties.length > 0) {
     return this.allowed_faculties.includes(studentFaculty);
   }

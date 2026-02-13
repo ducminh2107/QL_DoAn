@@ -27,6 +27,7 @@ import {
   Edit as EditIcon,
   Visibility as VisibilityIcon,
   Pending as PendingIcon,
+  Group as GroupIcon,
 } from "@mui/icons-material";
 import { useNavigate } from "react-router-dom";
 import axios from "axios";
@@ -76,7 +77,7 @@ const TopicApprovals = () => {
       });
 
       toast.success(
-        `Đã ${action === "approve" ? "duyệt" : action === "reject" ? "từ chối" : "yêu cầu sửa"} đề tài`
+        `Đã ${action === "approve" ? "duyệt" : action === "reject" ? "từ chối" : "yêu cầu sửa"} đề tài`,
       );
       setApprovalDialog({
         open: false,
@@ -207,9 +208,9 @@ const TopicApprovals = () => {
                         color="text.secondary"
                         paragraph
                       >
-                        {topic.topic_description.length > 300
+                        {(topic.topic_description || "").length > 300
                           ? `${topic.topic_description.substring(0, 300)}...`
-                          : topic.topic_description}
+                          : topic.topic_description || ""}
                       </Typography>
                     </Grid>
 

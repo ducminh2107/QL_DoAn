@@ -120,7 +120,7 @@ const TeacherTopics = () => {
       setRegistrationPeriods(periods);
       // Auto-select active registration period if available
       const activePeriod = periods.find(
-        (p) => p.registration_period_status === "active"
+        (p) => p.registration_period_status === "active",
       );
       if (activePeriod) {
         setNewTopic((prev) => ({
@@ -139,7 +139,7 @@ const TeacherTopics = () => {
       toast.success("Tạo đề tài thành công");
       setCreateDialog(false);
       const activePeriod = registrationPeriods.find(
-        (p) => p.registration_period_status === "active"
+        (p) => p.registration_period_status === "active",
       );
       setNewTopic({
         topic_title: "",
@@ -210,7 +210,14 @@ const TeacherTopics = () => {
         <Button
           variant="contained"
           startIcon={<AddIcon />}
-          onClick={() => setCreateDialog(true)}
+          onClick={() => navigate("/teacher/topics/create")}
+          sx={{
+            borderRadius: "10px",
+            textTransform: "none",
+            fontWeight: 600,
+            bgcolor: "#1e3a8a",
+            "&:hover": { bgcolor: "#1e293b" },
+          }}
         >
           Tạo đề tài mới
         </Button>
@@ -418,7 +425,7 @@ const TeacherTopics = () => {
                           <GroupIcon fontSize="small" sx={{ mr: 1 }} />
                           <Typography variant="body2">
                             {topic.topic_group_student?.filter(
-                              (s) => s.status === "approved"
+                              (s) => s.status === "approved",
                             ).length || 0}
                             /{topic.topic_max_members}
                           </Typography>
@@ -459,7 +466,7 @@ const TeacherTopics = () => {
                                 }}
                                 title="Xóa"
                                 disabled={topic.topic_group_student?.some(
-                                  (s) => s.status === "approved"
+                                  (s) => s.status === "approved",
                                 )}
                               >
                                 <DeleteIcon fontSize="small" />
@@ -497,14 +504,24 @@ const TeacherTopics = () => {
         onClose={() => setCreateDialog(false)}
         maxWidth="md"
         fullWidth
+        PaperProps={{
+          sx: { borderRadius: "16px", p: 1 },
+        }}
       >
-        <DialogTitle>Tạo đề tài mới</DialogTitle>
+        <DialogTitle sx={{ fontWeight: 800, color: "#1e3a8a", pb: 1 }}>
+          🚀 Tạo đề tài nghiên cứu mới
+        </DialogTitle>
         <DialogContent>
-          <Grid container spacing={2} sx={{ mt: 1 }}>
+          <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
+            Điền các thông tin chi tiết để công bố đề tài cho sinh viên đăng ký.
+          </Typography>
+
+          <Grid container spacing={3}>
             <Grid item xs={12}>
               <TextField
                 fullWidth
                 label="Tiêu đề đề tài"
+                placeholder="Nhập tiêu đề học thuật của đề tài..."
                 value={newTopic.topic_title}
                 onChange={(e) =>
                   setNewTopic((prev) => ({
@@ -513,12 +530,15 @@ const TeacherTopics = () => {
                   }))
                 }
                 required
+                InputProps={{ sx: { borderRadius: "12px" } }}
               />
             </Grid>
+
             <Grid item xs={12}>
               <TextField
                 fullWidth
                 label="Mô tả đề tài"
+                placeholder="Chi tiết công nghệ, kỹ năng và mục tiêu..."
                 multiline
                 rows={4}
                 value={newTopic.topic_description}
@@ -529,11 +549,13 @@ const TeacherTopics = () => {
                   }))
                 }
                 required
+                InputProps={{ sx: { borderRadius: "12px" } }}
               />
             </Grid>
+
             <Grid item xs={12} md={6}>
               <FormControl fullWidth required>
-                <InputLabel>Danh mục</InputLabel>
+                <InputLabel>Danh mục đề tài</InputLabel>
                 <Select
                   value={newTopic.topic_category}
                   onChange={(e) =>
@@ -542,7 +564,8 @@ const TeacherTopics = () => {
                       topic_category: e.target.value,
                     }))
                   }
-                  label="Danh mục"
+                  label="Danh mục đề tài"
+                  sx={{ borderRadius: "12px" }}
                 >
                   {categories.map((cat) => (
                     <MenuItem key={cat._id} value={cat._id}>
@@ -552,9 +575,10 @@ const TeacherTopics = () => {
                 </Select>
               </FormControl>
             </Grid>
+
             <Grid item xs={12} md={6}>
               <FormControl fullWidth>
-                <InputLabel>Chuyên ngành</InputLabel>
+                <InputLabel>Chuyên ngành phù hợp</InputLabel>
                 <Select
                   value={newTopic.topic_major}
                   onChange={(e) =>
@@ -563,10 +587,11 @@ const TeacherTopics = () => {
                       topic_major: e.target.value,
                     }))
                   }
-                  label="Chuyên ngành"
+                  label="Chuyên ngành phù hợp"
+                  sx={{ borderRadius: "12px" }}
                 >
                   <MenuItem value="">
-                    <em>Không chọn</em>
+                    <em>Tất cả chuyên ngành</em>
                   </MenuItem>
                   {majors.map((major) => (
                     <MenuItem key={major._id} value={major._id}>
@@ -576,9 +601,10 @@ const TeacherTopics = () => {
                 </Select>
               </FormControl>
             </Grid>
+
             <Grid item xs={12} md={6}>
               <FormControl fullWidth required>
-                <InputLabel>Kỳ đăng ký</InputLabel>
+                <InputLabel>Kỳ đăng ký hiện tại</InputLabel>
                 <Select
                   value={newTopic.topic_registration_period}
                   onChange={(e) =>
@@ -587,7 +613,8 @@ const TeacherTopics = () => {
                       topic_registration_period: e.target.value,
                     }))
                   }
-                  label="Kỳ đăng ký"
+                  label="Kỳ đăng ký hiện tại"
+                  sx={{ borderRadius: "12px" }}
                 >
                   {registrationPeriods.map((period) => (
                     <MenuItem key={period._id} value={period._id}>
@@ -598,10 +625,11 @@ const TeacherTopics = () => {
                 </Select>
               </FormControl>
             </Grid>
+
             <Grid item xs={12} md={6}>
               <TextField
                 fullWidth
-                label="Số lượng sinh viên tối đa"
+                label="Số sinh viên tối đa"
                 type="number"
                 value={newTopic.topic_max_members}
                 onChange={(e) =>
@@ -611,12 +639,15 @@ const TeacherTopics = () => {
                   }))
                 }
                 inputProps={{ min: 1, max: 5 }}
+                InputProps={{ sx: { borderRadius: "12px" } }}
               />
             </Grid>
+
             <Grid item xs={12}>
               <TextField
                 fullWidth
-                label="Yêu cầu đối với sinh viên (tùy chọn)"
+                label="Yêu cầu / Ghi chú cho sinh viên"
+                placeholder="Ví dụ: Ưu tiên sinh viên biết React, siêng năng..."
                 multiline
                 rows={2}
                 value={newTopic.topic_advisor_request}
@@ -626,13 +657,18 @@ const TeacherTopics = () => {
                     topic_advisor_request: e.target.value,
                   }))
                 }
-                placeholder="Ví dụ: Có kiến thức về React, MongoDB, v.v."
+                InputProps={{ sx: { borderRadius: "12px" } }}
               />
             </Grid>
           </Grid>
         </DialogContent>
-        <DialogActions>
-          <Button onClick={() => setCreateDialog(false)}>Hủy</Button>
+        <DialogActions sx={{ p: 3, gap: 1 }}>
+          <Button
+            onClick={() => setCreateDialog(false)}
+            sx={{ borderRadius: "10px", color: "#64748b" }}
+          >
+            Hủy bỏ
+          </Button>
           <Button
             onClick={handleCreateTopic}
             variant="contained"
@@ -642,6 +678,12 @@ const TeacherTopics = () => {
               !newTopic.topic_category ||
               !newTopic.topic_registration_period
             }
+            sx={{
+              borderRadius: "10px",
+              px: 4,
+              bgcolor: "#1e3a8a",
+              "&:hover": { bgcolor: "#1e293b" },
+            }}
           >
             Tạo đề tài
           </Button>

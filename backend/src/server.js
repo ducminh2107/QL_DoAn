@@ -7,10 +7,23 @@ const path = require('path');
 const mongoose = require('mongoose');
 const cookieParser = require('cookie-parser');
 const authRoutes = require('./routes/auth.routes');
-const userRoutes = require('./routes/user.routes');
-const studentRoutes = require('./routes/student.routes');
+const userRoutes = require('./routes/admin/user.routes');
+const studentRoutes = require('./routes/student/student.routes');
 const topicCategoryRoutes = require('./routes/topicCategory.routes');
-const teacherRoutes = require('./routes/teacher.routes');
+const teacherRoutes = require('./routes/teacher/teacher.routes');
+const semesterRoutes = require('./routes/admin/semester.routes');
+const registrationPeriodRoutes = require('./routes/admin/registrationPeriod.routes');
+const councilRoutes = require('./routes/admin/council.routes');
+const rubricRoutes = require('./routes/admin/rubric.routes');
+const reportRoutes = require('./routes/admin/report.routes');
+const majorRoutes = require('./routes/admin/major.routes');
+const facultyRoutes = require('./routes/admin/faculty.routes');
+const adminSystemTopicsRoutes = require('./routes/admin/systemTopics.routes');
+const adminScheduleRoutes = require('./routes/admin/schedule.routes');
+const adminSettingsRoutes = require('./routes/admin/settings.routes');
+const adminLogsRoutes = require('./routes/admin/logs.routes');
+const adminExportRoutes = require('./routes/admin/export.routes');
+const adminImportRoutes = require('./routes/admin/import.routes');
 
 // Load env vars
 dotenv.config();
@@ -22,9 +35,9 @@ const connectDB = require('./config/database');
 const app = express();
 
 // Middleware
-app.use(express.json());
+app.use(express.json({ limit: '10mb' }));
 app.use(cookieParser());
-app.use(express.urlencoded({ extended: true }));
+app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 app.use(
   cors({
     origin: process.env.FRONTEND_URL || 'http://localhost:3000',
@@ -51,6 +64,21 @@ app.use('/api/teacher', teacherRoutes);
 app.use('/api/auth', authRoutes);
 app.use('/api/users', userRoutes);
 app.use('/api/topic-categories', topicCategoryRoutes);
+app.use('/api/semesters', semesterRoutes);
+app.use('/api/registration-periods', registrationPeriodRoutes);
+app.use('/api/councils', councilRoutes);
+app.use('/api/rubrics', rubricRoutes);
+app.use('/api/reports', reportRoutes);
+app.use('/api/majors', majorRoutes);
+app.use('/api/faculties', facultyRoutes);
+
+// Admin Routes
+app.use('/api/admin/system-topics', adminSystemTopicsRoutes);
+app.use('/api/admin/schedules', adminScheduleRoutes);
+app.use('/api/admin/system-settings', adminSettingsRoutes);
+app.use('/api/admin/system-logs', adminLogsRoutes);
+app.use('/api/admin/export', adminExportRoutes);
+app.use('/api/admin/import', adminImportRoutes);
 
 // Basic route
 app.get('/', (req, res) => {
