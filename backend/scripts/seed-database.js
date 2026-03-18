@@ -25,8 +25,8 @@ const seedUsers = async () => {
     // Create admin user
     const adminUser = await User.create({
       user_id: 'ADMIN001',
-      email: 'admin@thesis.edu.vn',
-      password: 'admin123',
+      email: 'ADMIN001@qtv.tdmu.vn',
+      password: 'ADMIN001@2026',
       user_name: 'System Administrator',
       role: 'admin',
       user_status: true,
@@ -36,8 +36,8 @@ const seedUsers = async () => {
     // Create teacher user
     const teacherUser = await User.create({
       user_id: 'TEACH001',
-      email: 'teacher@thesis.edu.vn',
-      password: 'teacher123',
+      email: 'TEACH001@gv.tdmu.vn',
+      password: 'TEACH001@2026',
       user_name: 'Dr. Nguyen Van A',
       role: 'teacher',
       user_status: true,
@@ -49,8 +49,8 @@ const seedUsers = async () => {
     // Create student user
     const studentUser = await User.create({
       user_id: 'STU001',
-      email: 'student@thesis.edu.vn',
-      password: 'student123',
+      email: 'STU001@student.tdmu.edu.vn',
+      password: 'STU001@2026',
       user_name: 'Nguyen Van B',
       role: 'student',
       user_status: true,
@@ -62,9 +62,9 @@ const seedUsers = async () => {
     });
 
     console.log('👥 Created test users:');
-    console.log(`  👨‍💼 Admin: ${adminUser.email} / admin123`);
-    console.log(`  👨‍🏫 Teacher: ${teacherUser.email} / teacher123`);
-    console.log(`  👨‍🎓 Student: ${studentUser.email} / student123`);
+    console.log(`  👨‍💼 Admin: ${adminUser.email} / ADMIN001@2026`);
+    console.log(`  👨‍🏫 Teacher: ${teacherUser.email} / TEACH001@2026`);
+    console.log(`  👨‍🎓 Student: ${studentUser.email} / STU001@2026`);
 
     console.log('✅ User seeding completed successfully!');
 

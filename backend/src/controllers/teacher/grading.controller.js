@@ -295,13 +295,20 @@ const submitGrades = async (req, res, next) => {
     let totalScore = final_score;
     if (!totalScore) {
       totalScore = evaluations.reduce((sum, evalItem) => {
+        const score = parseFloat(evalItem.score);
         const rubricItem = rubric.rubric_evaluations.find(
           (item) => item._id.toString() === evalItem.rubric_item_id
         );
-        if (rubricItem && rubricItem.weight) {
-          return sum + (evalItem.score * rubricItem.weight) / 100;
+        const maxScore = rubricItem?.max_score || evalItem.max_score || 10;
+        
+        if (isNaN(score) || score < 0 || score > maxScore) {
+          throw new Error(`Điểm không hợp lệ: ${evalItem.criteria_name}`);
         }
-        return sum + evalItem.score;
+        
+        if (rubricItem && rubricItem.weight) {
+          return sum + (score * rubricItem.weight) / 100;
+        }
+        return sum + score;
       }, 0);
     }
 
@@ -421,9 +428,7 @@ const getGradingHistory = async (req, res, next) => {
       Scoreboard.countDocuments(query),
     ]);
 
-    if (!scoreboards) {
-      return res.status(200).json({ success: true, stats: {}, data: [] });
-    }
+
 
     const studentIds = [
       ...new Set(

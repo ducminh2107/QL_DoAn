@@ -85,6 +85,13 @@ const handleRegistration = async (req, res, next) => {
     const { studentId, topicId } = req.params;
     const { action, feedback } = req.body;
 
+    if (!mongoose.Types.ObjectId.isValid(topicId) || !mongoose.Types.ObjectId.isValid(studentId)) {
+      return res.status(400).json({
+        success: false,
+        message: 'ID đề tài hoặc sinh viên không hợp lệ',
+      });
+    }
+
     if (!['approve', 'reject'].includes(action)) {
       return res.status(400).json({
         success: false,
@@ -157,10 +164,10 @@ const handleRegistration = async (req, res, next) => {
       }
     );
 
-    // If approving and student doesn't have current topic, set it
+    // If approving and student doesn't have current topic, set it [BUG-10 FIX: null check]
     if (action === 'approve') {
       const student = await User.findById(studentId);
-      if (!student.current_topic) {
+      if (student && !student.current_topic) {  // Guard: student có thể đã bị xóa khỏi DB
         student.current_topic = topicId;
         await student.save();
       }

@@ -19,21 +19,7 @@ router.post('/refresh-token', authController.refreshToken);
 router.use(protect);
 
 router.get('/me', authController.getMe);
-router.get('/debug-me', (req, res) => {
-  // Debug endpoint
-  console.log('\n🔍 DEBUG: /api/auth/debug-me called');
-  console.log(
-    '   Token in header:',
-    req.headers.authorization?.substring(0, 50)
-  );
-  console.log('   req.user:', req.user);
-  res.json({
-    debug: {
-      reqUser: req.user,
-      message: 'Check backend console for more info',
-    },
-  });
-});
+
 router.put(
   '/update-profile',
   validate(authValidation.updateProfile),

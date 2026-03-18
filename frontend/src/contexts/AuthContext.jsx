@@ -1,5 +1,6 @@
 import React, { createContext, useState, useContext, useEffect } from "react";
 import axios from "axios";
+axios.defaults.timeout = 10000;
 import toast from "react-hot-toast";
 
 const AuthContext = createContext({});

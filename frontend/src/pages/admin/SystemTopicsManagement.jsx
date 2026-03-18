@@ -347,7 +347,7 @@ const PendingCard = ({ topic, onView, onApprove, onReject }) => {
           mt: 1.5,
           display: "block",
           color: "#64748b",
-          display: "-webkit-box",
+          //display: "-webkit-box",
           WebkitLineClamp: 2,
           WebkitBoxOrient: "vertical",
           overflow: "hidden",

@@ -140,7 +140,8 @@ const ProposeTopic = () => {
   }, []);
 
   const handleChange = (field) => (event) => {
-    setForm((prev) => ({ ...prev, [field]: event.target.value }));
+    const value = field === 'topic_max_members' ? parseInt(event.target.value, 10) || 1 : event.target.value;
+    setForm((prev) => ({ ...prev, [field]: value }));
     // Clear error for this field
     if (errors[field]) {
       setErrors((prev) => ({ ...prev, [field]: null }));

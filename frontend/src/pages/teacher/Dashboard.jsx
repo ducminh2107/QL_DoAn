@@ -10,7 +10,6 @@ import {
   LinearProgress,
   Avatar,
   Stack,
-  IconButton,
   Divider,
 } from "@mui/material";
 import {
@@ -41,17 +40,16 @@ import toast from "react-hot-toast";
 // Colour palette
 // ─────────────────────────────────────────────────────────────────
 const C = {
-  primary: "#0ea5e9", // sky-500
-  primaryDk: "#0369a1", // sky-700
-  teal: "#14b8a6", // teal-500
-  emerald: "#10b981", // emerald-500
-  amber: "#f59e0b", // amber-500
-  rose: "#f43f5e", // rose-500
-  violet: "#8b5cf6", // violet-500
+  primary: "#0ea5e9",
+  primaryDk: "#0369a1",
+  teal: "#14b8a6",
+  emerald: "#10b981",
+  amber: "#f59e0b",
+  rose: "#f43f5e",
+  violet: "#8b5cf6",
   slate: "#64748b",
 };
 
-// ─────────────────────────────────────────────────────────────────
 const alpha = (hex, op) => {
   const r = parseInt(hex.slice(1, 3), 16);
   const g = parseInt(hex.slice(3, 5), 16);
@@ -60,21 +58,16 @@ const alpha = (hex, op) => {
 };
 
 // ─────────────────────────────────────────────────────────────────
-const GlassCard = ({ children, hover = true, sx = {} }) => (
+const SectionCard = ({ children, sx = {} }) => (
   <Card
     elevation={0}
     sx={{
-      borderRadius: "24px",
+      borderRadius: "20px",
       background: "#fff",
       border: "1px solid #e2e8f0",
-      boxShadow: "0 4px 24px rgba(0,0,0,0.05)",
-      transition: "all 0.3s ease",
-      ...(hover && {
-        "&:hover": {
-          transform: "translateY(-4px)",
-          boxShadow: "0 16px 48px rgba(0,0,0,0.1)",
-        },
-      }),
+      boxShadow: "0 2px 12px rgba(0,0,0,0.05)",
+      transition: "box-shadow 0.25s",
+      "&:hover": { boxShadow: "0 6px 24px rgba(0,0,0,0.09)" },
       ...sx,
     }}
   >
@@ -135,10 +128,12 @@ const TeacherDashboard = () => {
 
   const greet = () => {
     const h = new Date().getHours();
-    if (h < 12) return "Chào buổi sáng";
-    if (h < 18) return "Chào buổi chiều";
-    return "Chào buổi tối";
+    if (h < 12) return { text: "Chào buổi sáng", emoji: "🌤️" };
+    if (h < 18) return { text: "Chào buổi chiều", emoji: "☀️" };
+    return { text: "Chào buổi tối", emoji: "🌙" };
   };
+
+  const greeting = greet();
 
   // ── Loading ────────────────────────────────────────────────────
   if (loading) {
@@ -278,26 +273,26 @@ const TeacherDashboard = () => {
       sx={{
         minHeight: "100vh",
         background:
-          "linear-gradient(160deg,#f0f9ff 0%,#f0fdf4 60%,#fdf4ff 100%)",
+          "linear-gradient(160deg,#f0f9ff 0%,#f8fafc 60%,#fdf4ff 100%)",
         pb: 6,
       }}
     >
       {/* ╔══════════════════  HERO HEADER  ══════════════════════╗ */}
       <Box
         sx={{
-          background: `linear-gradient(135deg, ${C.primary} 0%, ${C.teal} 100%)`,
-          pt: { xs: 4, md: 5 },
-          pb: { xs: 10, md: 12 },
-          px: { xs: 3, md: 6 },
+          background: `linear-gradient(135deg, ${C.primaryDk} 0%, ${C.primary} 50%, ${C.teal} 100%)`,
+          pt: { xs: 3, md: 4 },
+          pb: { xs: 3, md: 4 },
+          px: { xs: 2, md: 5 },
           position: "relative",
           overflow: "hidden",
         }}
       >
         {/* decorative blobs */}
         {[
-          { top: -80, right: -80, sz: 280, op: 0.1 },
-          { top: 40, right: 160, sz: 120, op: 0.07 },
-          { bottom: -100, left: -50, sz: 320, op: 0.09 },
+          { top: -60, right: -60, sz: 220, op: 0.08 },
+          { top: 30, right: 180, sz: 100, op: 0.06 },
+          { bottom: -80, left: -40, sz: 260, op: 0.07 },
         ].map((b, i) => (
           <Box
             key={i}
@@ -321,7 +316,9 @@ const TeacherDashboard = () => {
             sx={{
               display: "flex",
               justifyContent: "space-between",
-              alignItems: "flex-start",
+              alignItems: "center",
+              flexWrap: "wrap",
+              gap: 2,
             }}
           >
             {/* Greeting */}
@@ -329,14 +326,15 @@ const TeacherDashboard = () => {
               <Avatar
                 src={user?.user_avatar}
                 sx={{
-                  width: 76,
-                  height: 76,
-                  border: "3px solid rgba(255,255,255,0.6)",
-                  boxShadow: "0 8px 32px rgba(0,0,0,0.2)",
-                  fontSize: "2rem",
+                  width: 68,
+                  height: 68,
+                  border: "3px solid rgba(255,255,255,0.5)",
+                  boxShadow: "0 6px 24px rgba(0,0,0,0.2)",
+                  fontSize: "1.8rem",
                   fontWeight: 900,
                   background: "linear-gradient(135deg,#fff 0%,#cffafe 100%)",
                   color: C.primaryDk,
+                  flexShrink: 0,
                 }}
               >
                 {user?.user_name?.charAt(0)}
@@ -350,20 +348,25 @@ const TeacherDashboard = () => {
                     mb: 0.3,
                   }}
                 >
-                  {greet()} 👋
+                  {greeting.text} {greeting.emoji}
                 </Typography>
                 <Typography
-                  variant="h4"
+                  variant="h5"
                   sx={{
                     color: "#fff",
                     fontWeight: 900,
-                    letterSpacing: "-0.02em",
-                    lineHeight: 1.1,
+                    letterSpacing: "-0.01em",
+                    lineHeight: 1.2,
                   }}
                 >
                   {user?.user_name || "Giảng viên"}
                 </Typography>
-                <Stack direction="row" spacing={1} sx={{ mt: 1 }}>
+                <Stack
+                  direction="row"
+                  spacing={1}
+                  sx={{ mt: 0.8 }}
+                  flexWrap="wrap"
+                >
                   <Chip
                     label={user?.user_id}
                     size="small"
@@ -372,6 +375,7 @@ const TeacherDashboard = () => {
                       color: "#fff",
                       fontWeight: 700,
                       borderRadius: "8px",
+                      fontSize: "0.7rem",
                     }}
                   />
                   <Chip
@@ -386,6 +390,7 @@ const TeacherDashboard = () => {
                       color: "rgba(255,255,255,0.9)",
                       fontWeight: 600,
                       borderRadius: "8px",
+                      fontSize: "0.7rem",
                     }}
                   />
                 </Stack>
@@ -404,15 +409,15 @@ const TeacherDashboard = () => {
                 borderRadius: "14px",
                 textTransform: "none",
                 px: 3,
-                py: 1.3,
-                fontSize: "0.95rem",
-                boxShadow: "0 8px 24px rgba(0,0,0,0.15)",
+                py: 1.2,
+                fontSize: "0.9rem",
+                boxShadow: "0 6px 20px rgba(0,0,0,0.15)",
                 "&:hover": {
                   bgcolor: "#f0f9ff",
                   transform: "translateY(-2px)",
+                  boxShadow: "0 10px 28px rgba(0,0,0,0.2)",
                 },
                 transition: "all 0.25s",
-                display: { xs: "none", sm: "flex" },
               }}
             >
               Tạo đề tài mới
@@ -421,49 +426,57 @@ const TeacherDashboard = () => {
         </Box>
       </Box>
 
-      {/* ╔═════════════  STATS ROW (floating over hero)  ════════╗ */}
-      <Box
-        sx={{ px: { xs: 2, md: 5 }, mt: -6, position: "relative", zIndex: 3 }}
-      >
+      {/* ╔═════════════  STATS ROW  ════════════════════════════╗ */}
+      <Box sx={{ px: { xs: 2, md: 5 }, pt: 3 }}>
         <Grid container spacing={2}>
           {statCards.map((s, i) => (
             <Grid item xs={6} sm={4} md={2} key={i}>
               <Card
                 elevation={0}
                 sx={{
-                  borderRadius: "20px",
+                  borderRadius: "18px",
                   background: "#fff",
-                  boxShadow: "0 8px 32px rgba(0,0,0,0.08)",
-                  border: "1px solid rgba(255,255,255,0.9)",
-                  transition: "all 0.3s",
+                  boxShadow: "0 2px 12px rgba(0,0,0,0.07)",
+                  border: "1px solid #f1f5f9",
+                  transition: "all 0.25s",
+                  height: "100%",
                   "&:hover": {
-                    transform: "translateY(-4px)",
-                    boxShadow: "0 16px 48px rgba(0,0,0,0.12)",
+                    transform: "translateY(-3px)",
+                    boxShadow: `0 10px 32px ${alpha(s.color, 0.15)}`,
+                    borderColor: alpha(s.color, 0.3),
                   },
                 }}
               >
                 <CardContent sx={{ p: 2.5, "&:last-child": { pb: 2.5 } }}>
-                  <Box
-                    sx={{
-                      width: 42,
-                      height: 42,
-                      borderRadius: "12px",
-                      bgcolor: s.bg,
-                      display: "flex",
-                      alignItems: "center",
-                      justifyContent: "center",
-                      mb: 1.5,
-                      "& svg": { fontSize: 21, color: s.color },
-                    }}
+                  <Stack
+                    direction="row"
+                    alignItems="center"
+                    spacing={1.5}
+                    sx={{ mb: 1.5 }}
                   >
-                    {s.icon}
-                  </Box>
+                    <Box
+                      sx={{
+                        width: 40,
+                        height: 40,
+                        borderRadius: "12px",
+                        bgcolor: s.bg,
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                        flexShrink: 0,
+                        "& svg": { fontSize: 20, color: s.color },
+                      }}
+                    >
+                      {s.icon}
+                    </Box>
+                  </Stack>
                   <Typography
                     sx={{
-                      fontSize: "1.65rem",
+                      fontSize: "1.8rem",
                       fontWeight: 900,
                       color: "#0f172a",
                       lineHeight: 1,
+                      mb: 0.5,
                     }}
                   >
                     {s.value}
@@ -473,8 +486,8 @@ const TeacherDashboard = () => {
                     sx={{
                       color: "#64748b",
                       fontWeight: 600,
-                      mt: 0.4,
                       display: "block",
+                      lineHeight: 1.3,
                     }}
                   >
                     {s.label}
@@ -487,87 +500,85 @@ const TeacherDashboard = () => {
       </Box>
 
       {/* ╔══════════════════  MAIN CONTENT  ═════════════════════╗ */}
-      <Box sx={{ px: { xs: 2, md: 5 }, mt: 4 }}>
-        <Grid container spacing={3}>
+      <Box sx={{ px: { xs: 2, md: 5 }, mt: 3 }}>
+        <Grid container spacing={3} alignItems="flex-start">
           {/* ┌ LEFT COLUMN ─────────────────────────────────────┐ */}
           <Grid item xs={12} lg={7}>
             <Stack spacing={3}>
               {/* Quick Actions */}
-              <Box>
-                <Typography
-                  sx={{
-                    fontWeight: 800,
-                    color: "#1e293b",
-                    mb: 2,
-                    fontSize: "1.05rem",
-                  }}
-                >
-                  <BoltIcon
-                    sx={{ color: C.amber, verticalAlign: "middle", mr: 0.5 }}
-                  />
-                  Thao tác nhanh
-                </Typography>
-                <Grid container spacing={2}>
-                  {quickActions.map((a, i) => (
-                    <Grid item xs={6} sm={4} key={i}>
-                      <Card
-                        elevation={0}
-                        onClick={() => navigate(a.path)}
-                        sx={{
-                          borderRadius: "20px",
-                          border: "1px solid #e8eaf6",
-                          background: "#fff",
-                          cursor: "pointer",
-                          transition: "all 0.25s",
-                          "&:hover": {
-                            transform: "translateY(-6px)",
-                            boxShadow: `0 12px 40px ${alpha(a.color, 0.2)}`,
-                            borderColor: a.color,
-                          },
-                        }}
-                      >
-                        <CardContent
+              <SectionCard>
+                <CardContent sx={{ p: 3 }}>
+                  <Typography
+                    sx={{
+                      fontWeight: 800,
+                      color: "#1e293b",
+                      mb: 2.5,
+                      fontSize: "1rem",
+                      display: "flex",
+                      alignItems: "center",
+                      gap: 0.8,
+                    }}
+                  >
+                    <BoltIcon sx={{ color: C.amber, fontSize: 22 }} />
+                    Thao tác nhanh
+                  </Typography>
+                  <Grid container spacing={1.5}>
+                    {quickActions.map((a, i) => (
+                      <Grid item xs={4} sm={4} key={i}>
+                        <Box
+                          onClick={() => navigate(a.path)}
                           sx={{
-                            p: 2.5,
-                            "&:last-child": { pb: 2.5 },
+                            borderRadius: "16px",
+                            border: `1.5px solid ${alpha(a.color, 0.15)}`,
+                            background: alpha(a.color, 0.04),
+                            cursor: "pointer",
+                            transition: "all 0.22s",
+                            p: 2,
                             textAlign: "center",
+                            "&:hover": {
+                              background: alpha(a.color, 0.1),
+                              borderColor: alpha(a.color, 0.4),
+                              transform: "translateY(-3px)",
+                              boxShadow: `0 8px 24px ${alpha(a.color, 0.2)}`,
+                            },
                           }}
                         >
                           <Box
                             sx={{
-                              width: 52,
-                              height: 52,
-                              borderRadius: "16px",
-                              bgcolor: alpha(a.color, 0.1),
+                              width: 48,
+                              height: 48,
+                              borderRadius: "14px",
+                              bgcolor: alpha(a.color, 0.12),
                               mx: "auto",
-                              mb: 1.5,
+                              mb: 1,
                               display: "flex",
                               alignItems: "center",
                               justifyContent: "center",
-                              "& svg": { fontSize: 26, color: a.color },
+                              "& svg": { fontSize: 24, color: a.color },
                             }}
                           >
                             {a.icon}
                           </Box>
                           <Typography
                             sx={{
-                              fontWeight: 800,
-                              fontSize: "0.9rem",
+                              fontWeight: 700,
+                              fontSize: "0.78rem",
                               color: "#1e293b",
+                              lineHeight: 1.3,
                             }}
                           >
                             {a.label}
                           </Typography>
-                        </CardContent>
-                      </Card>
-                    </Grid>
-                  ))}
-                </Grid>
-              </Box>
+                        </Box>
+                      </Grid>
+                    ))}
+                  </Grid>
+                </CardContent>
+              </SectionCard>
 
               {/* Pending Topics */}
-              <GlassCard>
-                <CardContent sx={{ p: 3.5 }}>
+              <SectionCard>
+                <CardContent sx={{ p: 3 }}>
                   <Stack
                     direction="row"
                     justifyContent="space-between"
@@ -577,18 +588,14 @@ const TeacherDashboard = () => {
                     <Typography
                       sx={{
                         fontWeight: 800,
-                        fontSize: "1.05rem",
+                        fontSize: "1rem",
                         color: "#1e293b",
+                        display: "flex",
+                        alignItems: "center",
+                        gap: 0.8,
                       }}
                     >
-                      <PendingIcon
-                        sx={{
-                          color: C.amber,
-                          verticalAlign: "middle",
-                          mr: 0.5,
-                          fontSize: 22,
-                        }}
-                      />
+                      <PendingIcon sx={{ color: C.amber, fontSize: 22 }} />
                       Đề tài chờ duyệt
                     </Typography>
                     <Button
@@ -601,6 +608,8 @@ const TeacherDashboard = () => {
                         textTransform: "none",
                         fontWeight: 700,
                         color: C.primary,
+                        borderRadius: "10px",
+                        "&:hover": { bgcolor: alpha(C.primary, 0.08) },
                       }}
                     >
                       Xem tất cả
@@ -617,15 +626,15 @@ const TeacherDashboard = () => {
                           }
                           sx={{
                             p: 2,
-                            borderRadius: "16px",
+                            borderRadius: "14px",
                             cursor: "pointer",
                             background:
                               "linear-gradient(135deg,#fffbeb,#fef3c7)",
                             border: "1px solid #fde68a",
-                            transition: "0.25s",
+                            transition: "0.22s",
                             "&:hover": {
-                              transform: "translateX(6px)",
-                              boxShadow: `0 4px 20px ${alpha(C.amber, 0.2)}`,
+                              transform: "translateX(5px)",
+                              boxShadow: `0 4px 16px ${alpha(C.amber, 0.2)}`,
                             },
                           }}
                         >
@@ -656,7 +665,9 @@ const TeacherDashboard = () => {
                                 sx={{
                                   fontWeight: 800,
                                   color: "#1e293b",
-                                  noWrap: true,
+                                  overflow: "hidden",
+                                  textOverflow: "ellipsis",
+                                  whiteSpace: "nowrap",
                                 }}
                               >
                                 {topic.topic_title}
@@ -677,6 +688,7 @@ const TeacherDashboard = () => {
                                 color: "#92400e",
                                 fontWeight: 700,
                                 borderRadius: "8px",
+                                flexShrink: 0,
                               }}
                             />
                           </Stack>
@@ -684,9 +696,9 @@ const TeacherDashboard = () => {
                       ))}
                     </Stack>
                   ) : (
-                    <Box sx={{ textAlign: "center", py: 4 }}>
+                    <Box sx={{ textAlign: "center", py: 5 }}>
                       <CheckCircleIcon
-                        sx={{ fontSize: 40, color: "#d1fae5", mb: 1 }}
+                        sx={{ fontSize: 44, color: "#d1fae5", mb: 1.5 }}
                       />
                       <Typography
                         variant="body2"
@@ -697,11 +709,11 @@ const TeacherDashboard = () => {
                     </Box>
                   )}
                 </CardContent>
-              </GlassCard>
+              </SectionCard>
 
               {/* Pending Registrations */}
-              <GlassCard>
-                <CardContent sx={{ p: 3.5 }}>
+              <SectionCard>
+                <CardContent sx={{ p: 3 }}>
                   <Stack
                     direction="row"
                     justifyContent="space-between"
@@ -711,18 +723,14 @@ const TeacherDashboard = () => {
                     <Typography
                       sx={{
                         fontWeight: 800,
-                        fontSize: "1.05rem",
+                        fontSize: "1rem",
                         color: "#1e293b",
+                        display: "flex",
+                        alignItems: "center",
+                        gap: 0.8,
                       }}
                     >
-                      <GroupIcon
-                        sx={{
-                          color: C.violet,
-                          verticalAlign: "middle",
-                          mr: 0.5,
-                          fontSize: 22,
-                        }}
-                      />
+                      <GroupIcon sx={{ color: C.violet, fontSize: 22 }} />
                       Đăng ký chờ duyệt
                     </Typography>
                     <Button
@@ -735,6 +743,8 @@ const TeacherDashboard = () => {
                         textTransform: "none",
                         fontWeight: 700,
                         color: C.primary,
+                        borderRadius: "10px",
+                        "&:hover": { bgcolor: alpha(C.primary, 0.08) },
                       }}
                     >
                       Xem tất cả
@@ -753,15 +763,15 @@ const TeacherDashboard = () => {
                             }
                             sx={{
                               p: 2,
-                              borderRadius: "16px",
+                              borderRadius: "14px",
                               cursor: "pointer",
                               background:
                                 "linear-gradient(135deg,#f5f3ff,#ede9fe)",
                               border: "1px solid #ddd6fe",
-                              transition: "0.25s",
+                              transition: "0.22s",
                               "&:hover": {
-                                transform: "translateX(6px)",
-                                boxShadow: `0 4px 20px ${alpha(C.violet, 0.2)}`,
+                                transform: "translateX(5px)",
+                                boxShadow: `0 4px 16px ${alpha(C.violet, 0.2)}`,
                               },
                             }}
                           >
@@ -777,6 +787,7 @@ const TeacherDashboard = () => {
                                   bgcolor: alpha(C.violet, 0.15),
                                   color: C.violet,
                                   fontWeight: 800,
+                                  flexShrink: 0,
                                 }}
                               >
                                 {reg.student_name?.charAt(0)}
@@ -790,7 +801,13 @@ const TeacherDashboard = () => {
                                 </Typography>
                                 <Typography
                                   variant="caption"
-                                  sx={{ color: "#7c3aed" }}
+                                  sx={{
+                                    color: "#7c3aed",
+                                    overflow: "hidden",
+                                    textOverflow: "ellipsis",
+                                    whiteSpace: "nowrap",
+                                    display: "block",
+                                  }}
                                 >
                                   {reg.topic_title}
                                 </Typography>
@@ -803,6 +820,7 @@ const TeacherDashboard = () => {
                                   color: "#6d28d9",
                                   fontWeight: 700,
                                   borderRadius: "8px",
+                                  flexShrink: 0,
                                 }}
                               />
                             </Stack>
@@ -810,9 +828,9 @@ const TeacherDashboard = () => {
                         ))}
                     </Stack>
                   ) : (
-                    <Box sx={{ textAlign: "center", py: 4 }}>
+                    <Box sx={{ textAlign: "center", py: 5 }}>
                       <GroupIcon
-                        sx={{ fontSize: 40, color: "#e9d5ff", mb: 1 }}
+                        sx={{ fontSize: 44, color: "#e9d5ff", mb: 1.5 }}
                       />
                       <Typography
                         variant="body2"
@@ -823,16 +841,17 @@ const TeacherDashboard = () => {
                     </Box>
                   )}
                 </CardContent>
-              </GlassCard>
+              </SectionCard>
             </Stack>
           </Grid>
 
           {/* ┌ RIGHT SIDEBAR ───────────────────────────────────┐ */}
           <Grid item xs={12} lg={5}>
             <Stack spacing={3}>
-              {/* Profile Info */}
-              <GlassCard>
+              {/* Profile Summary */}
+              <SectionCard>
                 <CardContent sx={{ p: 3 }}>
+                  {/* Profile header */}
                   <Stack
                     direction="row"
                     spacing={2}
@@ -842,18 +861,25 @@ const TeacherDashboard = () => {
                     <Avatar
                       src={user?.user_avatar}
                       sx={{
-                        width: 56,
-                        height: 56,
+                        width: 52,
+                        height: 52,
                         background: `linear-gradient(135deg,${C.primary},${C.teal})`,
                         fontWeight: 900,
-                        fontSize: "1.4rem",
+                        fontSize: "1.3rem",
                         color: "#fff",
+                        flexShrink: 0,
                       }}
                     >
                       {user?.user_name?.charAt(0)}
                     </Avatar>
                     <Box>
-                      <Typography sx={{ fontWeight: 800, color: "#0f172a" }}>
+                      <Typography
+                        sx={{
+                          fontWeight: 800,
+                          color: "#0f172a",
+                          fontSize: "1rem",
+                        }}
+                      >
                         {user?.user_name}
                       </Typography>
                       <Typography
@@ -865,23 +891,26 @@ const TeacherDashboard = () => {
                     </Box>
                   </Stack>
 
-                  {/* Stats inline */}
-                  <Grid container spacing={1.5}>
+                  {/* Stats row */}
+                  <Grid container spacing={1.5} sx={{ mb: 2.5 }}>
                     {[
                       {
                         label: "Đang HD",
                         value: dashboardData.stats.my_guided || 0,
                         color: C.primary,
+                        bg: "#e0f2fe",
                       },
                       {
                         label: "Hoàn thành",
                         value: dashboardData.stats.completed || 0,
                         color: C.emerald,
+                        bg: "#d1fae5",
                       },
                       {
                         label: "Tỷ lệ HT",
                         value: `${completionRate}%`,
                         color: C.amber,
+                        bg: "#fef3c7",
                       },
                     ].map((s, i) => (
                       <Grid item xs={4} key={i}>
@@ -890,23 +919,27 @@ const TeacherDashboard = () => {
                             textAlign: "center",
                             p: 1.5,
                             borderRadius: "14px",
-                            bgcolor: alpha(s.color, 0.08),
-                            border: `1px solid ${alpha(s.color, 0.15)}`,
+                            bgcolor: s.bg,
                           }}
                         >
                           <Typography
                             sx={{
-                              fontSize: "1.3rem",
+                              fontSize: "1.4rem",
                               fontWeight: 900,
                               color: s.color,
                               lineHeight: 1,
+                              mb: 0.4,
                             }}
                           >
                             {s.value}
                           </Typography>
                           <Typography
                             variant="caption"
-                            sx={{ color: "#64748b", fontWeight: 600 }}
+                            sx={{
+                              color: "#64748b",
+                              fontWeight: 600,
+                              display: "block",
+                            }}
                           >
                             {s.label}
                           </Typography>
@@ -916,7 +949,7 @@ const TeacherDashboard = () => {
                   </Grid>
 
                   {/* Completion bar */}
-                  <Box sx={{ mt: 2.5 }}>
+                  <Box>
                     <Stack
                       direction="row"
                       justifyContent="space-between"
@@ -944,16 +977,16 @@ const TeacherDashboard = () => {
                         bgcolor: "#e0f2fe",
                         "& .MuiLinearProgress-bar": {
                           borderRadius: 4,
-                          bgcolor: C.primary,
+                          background: `linear-gradient(90deg, ${C.primary}, ${C.teal})`,
                         },
                       }}
                     />
                   </Box>
                 </CardContent>
-              </GlassCard>
+              </SectionCard>
 
               {/* Upcoming Defenses */}
-              <GlassCard>
+              <SectionCard>
                 <CardContent sx={{ p: 3 }}>
                   <Stack
                     direction="row"
@@ -966,16 +999,12 @@ const TeacherDashboard = () => {
                         fontWeight: 800,
                         fontSize: "1rem",
                         color: "#1e293b",
+                        display: "flex",
+                        alignItems: "center",
+                        gap: 0.8,
                       }}
                     >
-                      <ScheduleIcon
-                        sx={{
-                          verticalAlign: "middle",
-                          mr: 0.5,
-                          color: C.teal,
-                          fontSize: 21,
-                        }}
-                      />
+                      <ScheduleIcon sx={{ color: C.teal, fontSize: 22 }} />
                       Lịch bảo vệ sắp tới
                     </Typography>
                     <Chip
@@ -997,7 +1026,7 @@ const TeacherDashboard = () => {
                           key={i}
                           sx={{
                             p: 2,
-                            borderRadius: "16px",
+                            borderRadius: "14px",
                             background:
                               "linear-gradient(135deg,#f0fdf4,#dcfce7)",
                             border: "1px solid #bbf7d0",
@@ -1015,7 +1044,7 @@ const TeacherDashboard = () => {
                               spacing={0.5}
                               alignItems="center"
                             >
-                              <TimeIcon sx={{ fontSize: 14, color: C.slate }} />
+                              <TimeIcon sx={{ fontSize: 13, color: C.slate }} />
                               <Typography
                                 variant="caption"
                                 sx={{ color: C.slate, fontWeight: 600 }}
@@ -1029,7 +1058,7 @@ const TeacherDashboard = () => {
                               spacing={0.5}
                               alignItems="center"
                             >
-                              <RoomIcon sx={{ fontSize: 14, color: C.slate }} />
+                              <RoomIcon sx={{ fontSize: 13, color: C.slate }} />
                               <Typography
                                 variant="caption"
                                 sx={{ color: C.slate, fontWeight: 600 }}
@@ -1042,12 +1071,15 @@ const TeacherDashboard = () => {
                       ))}
                     </Stack>
                   ) : (
-                    <Box sx={{ textAlign: "center", py: 3 }}>
+                    <Box sx={{ textAlign: "center", py: 4 }}>
+                      <ScheduleIcon
+                        sx={{ fontSize: 44, color: "#ccfbf1", mb: 1.5 }}
+                      />
                       <Typography
                         sx={{
                           color: "#94a3b8",
                           fontWeight: 600,
-                          fontSize: "0.9rem",
+                          fontSize: "0.88rem",
                         }}
                       >
                         Chưa có lịch bảo vệ nào
@@ -1057,22 +1089,27 @@ const TeacherDashboard = () => {
 
                   <Button
                     fullWidth
-                    variant="text"
+                    variant="outlined"
                     sx={{
-                      mt: 2,
+                      mt: 2.5,
                       fontWeight: 700,
                       borderRadius: "12px",
                       textTransform: "none",
                       color: C.teal,
+                      borderColor: alpha(C.teal, 0.3),
+                      "&:hover": {
+                        bgcolor: alpha(C.teal, 0.06),
+                        borderColor: C.teal,
+                      },
                     }}
                   >
                     Xem lịch đầy đủ
                   </Button>
                 </CardContent>
-              </GlassCard>
+              </SectionCard>
 
               {/* Recent Activities */}
-              <GlassCard>
+              <SectionCard>
                 <CardContent sx={{ p: 3 }}>
                   <Typography
                     sx={{
@@ -1080,16 +1117,12 @@ const TeacherDashboard = () => {
                       fontSize: "1rem",
                       color: "#1e293b",
                       mb: 2.5,
+                      display: "flex",
+                      alignItems: "center",
+                      gap: 0.8,
                     }}
                   >
-                    <NotificationsIcon
-                      sx={{
-                        verticalAlign: "middle",
-                        mr: 0.5,
-                        color: C.rose,
-                        fontSize: 21,
-                      }}
-                    />
+                    <NotificationsIcon sx={{ color: C.rose, fontSize: 22 }} />
                     Hoạt động gần đây
                   </Typography>
 
@@ -1144,12 +1177,15 @@ const TeacherDashboard = () => {
                       ))}
                     </Stack>
                   ) : (
-                    <Box sx={{ textAlign: "center", py: 3 }}>
+                    <Box sx={{ textAlign: "center", py: 4 }}>
+                      <NotificationsIcon
+                        sx={{ fontSize: 44, color: "#fecdd3", mb: 1.5 }}
+                      />
                       <Typography
                         sx={{
                           color: "#94a3b8",
                           fontWeight: 600,
-                          fontSize: "0.9rem",
+                          fontSize: "0.88rem",
                         }}
                       >
                         Chưa có hoạt động nào gần đây
@@ -1157,7 +1193,7 @@ const TeacherDashboard = () => {
                     </Box>
                   )}
                 </CardContent>
-              </GlassCard>
+              </SectionCard>
             </Stack>
           </Grid>
         </Grid>

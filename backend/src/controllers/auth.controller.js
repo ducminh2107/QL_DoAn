@@ -71,7 +71,7 @@ const register = async (req, res, next) => {
       data: {
         user: sanitizeUser(user),
         accessToken,
-        refreshToken,
+        // refreshToken được gửi qua HTTP-only cookie, không trả về trong body
       },
     });
   } catch (error) {
@@ -151,7 +151,7 @@ const login = async (req, res, next) => {
       data: {
         user: sanitizeUser(user),
         accessToken,
-        refreshToken,
+        // refreshToken được gửi qua HTTP-only cookie, không trả về trong body
       },
     });
   } catch (error) {

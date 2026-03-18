@@ -5,6 +5,9 @@ const Notification = require('../../models/Notification');
 const RegistrationPeriod = require('../../models/RegistrationPeriod');
 const { sanitizeUser, getPagination } = require('../../utils/helpers');
 
+// [BUG-01 FIX] Escape ký tự đặc biệt của regex để chặn ReDoS Injection
+const escapeRegex = (str) => str.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+
 /**
  * @desc    Get teacher's topics (created or assigned)
  * @route   GET /api/teacher/topics
@@ -13,7 +16,6 @@ const { sanitizeUser, getPagination } = require('../../utils/helpers');
 const getTeacherTopics = async (req, res, next) => {
   try {
     const teacherId = req.user.id;
-    console.log(`🔍 getTeacherTopics called for ${teacherId}`);
     const page = parseInt(req.query.page) || 1;
     const limit = parseInt(req.query.limit) || 10;
     const skip = (page - 1) * limit;
@@ -48,11 +50,12 @@ const getTeacherTopics = async (req, res, next) => {
       }
     }
 
-    // Search filter
+    // Search filter — dùng escapeRegex để chặn ReDoS injection [BUG-01]
     if (req.query.search) {
+      const safeSearch = escapeRegex(req.query.search.trim());
       query.$or = [
-        { topic_title: { $regex: req.query.search, $options: 'i' } },
-        { topic_description: { $regex: req.query.search, $options: 'i' } },
+        { topic_title: { $regex: safeSearch, $options: 'i' } },
+        { topic_description: { $regex: safeSearch, $options: 'i' } },
       ];
     }
 

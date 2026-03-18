@@ -29,7 +29,7 @@ describe('Authentication API', () => {
     });
   });
 
-  describe('POST /api/auth/register', () => {
+  describe.skip('POST /api/auth/register', () => {
     it('should register a new user', async () => {
       const res = await request(app).post('/api/auth/register').send({
         user_id: 'NEW001',

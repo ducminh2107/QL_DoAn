@@ -7,6 +7,9 @@ const User = require('../../models/User');
 const RegistrationPeriod = require('../../models/RegistrationPeriod');
 const { sanitizeUser, getPagination } = require('../../utils/helpers');
 
+// [BUG-01 FIX] Escape ký tự đặc biệt của regex để chặn ReDoS Injection
+const escapeRegex = (str) => str.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+
 /**
  * @desc    Get all available topics for student
  * @route   GET /api/student/topics
@@ -37,11 +40,12 @@ const getAvailableTopics = async (req, res, next) => {
     // Sinh viên có thể xem toàn bộ các đề tài của bất kỳ chuyên ngành nào
     // để có khả năng đăng ký/hợp tác chéo nếu được giảng viên cho phép.
 
-    // Search filter
+    // Search filter — dùng escapeRegex để chặn ReDoS injection [BUG-01]
     if (req.query.search) {
+      const safeSearch = escapeRegex(req.query.search.trim());
       query.$or = [
-        { topic_title: { $regex: req.query.search, $options: 'i' } },
-        { topic_description: { $regex: req.query.search, $options: 'i' } },
+        { topic_title: { $regex: safeSearch, $options: 'i' } },
+        { topic_description: { $regex: safeSearch, $options: 'i' } },
       ];
     }
 
@@ -267,7 +271,6 @@ const registerForTopic = async (req, res, next) => {
     });
 
     if (!activePeriod) {
-      console.log('DEBUG: No active registration period found');
       return res.status(400).json({
         success: false,
         message: 'Hiện không có đợt đăng ký nào đang diễn ra',
@@ -326,10 +329,6 @@ const registerForTopic = async (req, res, next) => {
 
     // Check if topic is available
     if (!topic.is_active || topic.topic_teacher_status !== 'approved') {
-      console.log('DEBUG: Topic not approved or inactive', {
-        active: topic.is_active,
-        status: topic.topic_teacher_status,
-      });
       return res.status(400).json({
         success: false,
         message: 'Đề tài không khả dụng để đăng ký',
@@ -495,7 +494,6 @@ const proposeTopic = async (req, res, next) => {
     });
 
     if (!activePeriod) {
-      console.log('DEBUG: No active registration (proposal) period found');
       return res.status(400).json({
         success: false,
         message: 'Hiện không thể đề xuất đề tài mới',
@@ -804,12 +802,16 @@ const getTopicProgress = async (req, res, next) => {
     const studentId = req.user.id;
     const topicId = req.params.id;
 
-    // Check if student is member of this topic
+    if (!mongoose.Types.ObjectId.isValid(topicId)) {
+      return res.status(400).json({ success: false, message: 'ID đề tài không hợp lệ' });
+    }
+
+    // Check if student is member of this topic — lấy dữ liệu thực từ DB [BUG-08 FIX]
     const topic = await Topic.findOne({
       _id: topicId,
       'topic_group_student.student': studentId,
       'topic_group_student.status': 'approved',
-    });
+    }).populate('topic_instructor', 'user_name email');
 
     if (!topic) {
       return res.status(403).json({
@@ -818,51 +820,27 @@ const getTopicProgress = async (req, res, next) => {
       });
     }
 
-    // In real implementation, you would have a Progress model
-    // For now, return mock progress
+    // Tính overall_progress từ milestones thực tế trong DB
+    const milestones = topic.milestones || [];
+    const completedCount = milestones.filter((m) => m.status === 'completed').length;
+    const overallProgress = milestones.length > 0
+      ? Math.round((completedCount / milestones.length) * 100)
+      : 0;
+
+    // Tìm deadline tiếp theo (milestone sớm nhất chưa hoàn thành)
+    const upcomingMilestones = milestones
+      .filter((m) => m.status !== 'completed' && m.due_date)
+      .sort((a, b) => new Date(a.due_date) - new Date(b.due_date));
+    const nextDeadline = upcomingMilestones[0]?.due_date || null;
+
     const progress = {
       topic_id: topic._id,
       topic_title: topic.topic_title,
-      milestones: [
-        {
-          name: 'Đề cương đề tài',
-          status: 'completed',
-          due_date: new Date('2024-03-01'),
-          completed_date: new Date('2024-02-28'),
-          comment: 'Đã duyệt',
-        },
-        {
-          name: 'Báo cáo tiến độ 1',
-          status: 'in_progress',
-          due_date: new Date('2024-04-15'),
-          completed_date: null,
-          comment: 'Đang thực hiện',
-        },
-        {
-          name: 'Báo cáo tiến độ 2',
-          status: 'pending',
-          due_date: new Date('2024-05-30'),
-          completed_date: null,
-          comment: 'Chưa bắt đầu',
-        },
-        {
-          name: 'Báo cáo cuối',
-          status: 'pending',
-          due_date: new Date('2024-07-15'),
-          completed_date: null,
-          comment: 'Chưa bắt đầu',
-        },
-        {
-          name: 'Bảo vệ đề tài',
-          status: 'pending',
-          due_date: new Date('2024-08-01'),
-          completed_date: null,
-          comment: 'Chưa bắt đầu',
-        },
-      ],
-      overall_progress: 20,
-      next_deadline: new Date('2024-04-15'),
-      instructor_feedback: topic.topic_advisor_request || 'Chưa có nhận xét',
+      instructor_name: topic.topic_instructor?.user_name || '',
+      milestones,
+      overall_progress: overallProgress,
+      next_deadline: nextDeadline,
+      instructor_feedback: topic.teacher_notes || 'Chưa có nhận xét',
     };
 
     res.status(200).json({
@@ -924,7 +902,6 @@ const getTopicsProgress = async (req, res, next) => {
               status: 'pending',
             },
           ];
-          await topic.save();
         }
 
         // Calculate overall progress based on milestones
@@ -1222,7 +1199,15 @@ const submitMilestone = async (req, res, next) => {
       });
     }
 
-    if (!topic.milestones || !topic.milestones[milestoneIndex]) {
+    const idx = parseInt(milestoneIndex, 10);
+    if (isNaN(idx) || idx < 0) {
+      return res.status(400).json({
+        success: false,
+        message: 'Chỉ số mốc tiến độ không hợp lệ',
+      });
+    }
+
+    if (!topic.milestones || !topic.milestones[idx]) {
       return res.status(404).json({
         success: false,
         message: 'Mốc thời gian không tồn tại',
@@ -1230,9 +1215,9 @@ const submitMilestone = async (req, res, next) => {
     }
 
     // Update milestone
-    topic.milestones[milestoneIndex].status = 'completed'; // For now, allow student to mark as completed to see the % move
-    topic.milestones[milestoneIndex].notes = notes || req.body.notes;
-    topic.milestones[milestoneIndex].completed_date = new Date();
+    topic.milestones[idx].status = 'completed'; // For now, allow student to mark as completed to see the % move
+    topic.milestones[idx].notes = notes || req.body.notes;
+    topic.milestones[idx].completed_date = new Date();
 
     if (req.file) {
       const reportPath = `/uploads/reports/${req.file.filename}`;

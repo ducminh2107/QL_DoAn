@@ -233,7 +233,7 @@ const importUser = async (row) => {
       user_phone: user_phone || phone,
       role: role || 'student',
       user_status: true,
-      password: 'default123', // Should be changed on first login
+      password: `${user_id}@${new Date().getFullYear()}`, // Mật khẩu mặc định: [MaSV/MaGV]@[NamHienTai], vd: SV001@2026
       user_title: user_title || (role === 'teacher' ? 'Thạc sĩ' : ''),
       user_gender: user_gender || 'Nam',
       user_class: user_class || '',
