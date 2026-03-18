@@ -14,12 +14,7 @@ const facultySchema = new mongoose.Schema(
       trim: true,
       maxlength: [1000, 'Mo ta khong qua 1000 ky tu'],
     },
-    faculty_majors: [
-      {
-        type: mongoose.Schema.Types.ObjectId,
-        ref: 'Major',
-      },
-    ],
+    // faculty_majors removed. Mối quan hệ được quản lý qua collection majors
 
     faculty_code: {
       type: String,

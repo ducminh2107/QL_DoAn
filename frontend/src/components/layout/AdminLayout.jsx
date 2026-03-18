@@ -15,6 +15,7 @@ import {
   Menu,
   MenuItem,
   useTheme,
+  Tooltip,
 } from "@mui/material";
 import {
   Dashboard as DashboardIcon,
@@ -30,15 +31,76 @@ import {
   Topic as TopicIcon,
   School as SchoolIcon,
   Category as CategoryIcon,
-  Schedule as ScheduleIcon,
   Description as LogIcon,
-  CloudDownload as ExportIcon,
-  CloudUpload as ImportIcon,
+  SwapHoriz as ImportExportIcon,
+  Schedule as ScheduleIcon,
 } from "@mui/icons-material";
 import { Outlet, useLocation, useNavigate } from "react-router-dom";
 import { useAuth } from "../../contexts/AuthContext";
 
 const drawerWidth = 240;
+
+// ── Menu groups ──────────────────────────────────────────────────────────────
+const menuGroups = [
+  {
+    // No label = no section header (top items always visible)
+    items: [
+      { text: "Dashboard", icon: <DashboardIcon />, path: "/admin/dashboard" },
+      { text: "Người dùng", icon: <PeopleIcon />, path: "/admin/users" },
+    ],
+  },
+  {
+    label: "HỌC KỲ & ĐĂNG KÝ",
+    items: [
+      { text: "Học kỳ", icon: <CalendarIcon />, path: "/admin/semesters" },
+      {
+        text: "Đợt đăng ký",
+        icon: <AssignmentIcon />,
+        path: "/admin/registration-periods",
+      },
+    ],
+  },
+  {
+    label: "CHẤM ĐIỂM",
+    items: [
+      { text: "Hội đồng", icon: <GroupsIcon />, path: "/admin/councils" },
+      { text: "Rubric", icon: <RubricIcon />, path: "/admin/rubrics" },
+      { text: "Lịch trình", icon: <ScheduleIcon />, path: "/admin/schedules" },
+    ],
+  },
+  {
+    label: "NỘI DUNG",
+    items: [
+      {
+        text: "Đề tài hệ thống",
+        icon: <TopicIcon />,
+        path: "/admin/system-topics",
+      },
+      {
+        text: "Khoa & Ngành",
+        icon: <SchoolIcon />,
+        path: "/admin/faculty-major",
+      },
+      {
+        text: "Danh mục đề tài",
+        icon: <CategoryIcon />,
+        path: "/admin/topic-categories",
+      },
+    ],
+  },
+  {
+    label: "HỆ THỐNG",
+    items: [
+      {
+        text: "Nhập/Xuất dữ liệu",
+        icon: <ImportExportIcon />,
+        path: "/admin/import-export",
+      },
+      { text: "Nhật ký", icon: <LogIcon />, path: "/admin/logs" },
+      { text: "Cài đặt", icon: <SettingsIcon />, path: "/admin/settings" },
+    ],
+  },
+];
 
 const AdminLayout = () => {
   const [anchorEl, setAnchorEl] = useState(null);
@@ -47,57 +109,19 @@ const AdminLayout = () => {
   const { user, logout } = useAuth();
   const theme = useTheme();
 
-  const handleMenuClick = (event) => {
-    setAnchorEl(event.currentTarget);
-  };
-
-  const handleMenuClose = () => {
-    setAnchorEl(null);
-  };
-
+  const handleMenuClick = (event) => setAnchorEl(event.currentTarget);
+  const handleMenuClose = () => setAnchorEl(null);
   const handleLogout = () => {
     logout();
     handleMenuClose();
   };
 
-  const menuItems = [
-    { text: "Dashboard", icon: <DashboardIcon />, path: "/admin/dashboard" },
-    { text: "Quản lý người dùng", icon: <PeopleIcon />, path: "/admin/users" },
-    { text: "Học kỳ", icon: <CalendarIcon />, path: "/admin/semesters" },
-    {
-      text: "Đợt đăng ký",
-      icon: <AssignmentIcon />,
-      path: "/admin/registration-periods",
-    },
-    { text: "Hội đồng", icon: <GroupsIcon />, path: "/admin/councils" },
-    { text: "Rubric", icon: <RubricIcon />, path: "/admin/rubrics" },
-    // Content Management
-    {
-      text: "Đề tài hệ thống",
-      icon: <TopicIcon />,
-      path: "/admin/system-topics",
-    },
-    { text: "Ngành học", icon: <SchoolIcon />, path: "/admin/faculty-major" },
-    {
-      text: "Danh mục đề tài",
-      icon: <CategoryIcon />,
-      path: "/admin/topic-categories",
-    },
-    // Reporting & Analytics
-    { text: "Báo cáo", icon: <ReportIcon />, path: "/admin/reports" },
-    // Organization
-    { text: "Lịch trình", icon: <ScheduleIcon />, path: "/admin/schedules" },
-    // System Administration
-    { text: "Nhật ký hệ thống", icon: <LogIcon />, path: "/admin/logs" },
-    { text: "Cài đặt", icon: <SettingsIcon />, path: "/admin/settings" },
-    // Data Management
-    { text: "Xuất dữ liệu", icon: <ExportIcon />, path: "/admin/export" },
-    { text: "Nhập/Xuất", icon: <ImportIcon />, path: "/admin/import-export" },
-  ];
+  const isSelected = (path) =>
+    location.pathname === path || location.pathname.startsWith(path + "/");
 
   return (
     <Box sx={{ display: "flex", flexDirection: "column", minHeight: "100vh" }}>
-      {/* App Bar - Full Width */}
+      {/* ── AppBar ───────────────────────────────────────────────────── */}
       <AppBar
         position="fixed"
         sx={{
@@ -109,52 +133,99 @@ const AdminLayout = () => {
         }}
       >
         <Toolbar sx={{ justifyContent: "space-between" }}>
-          <Typography
-            variant="h6"
-            noWrap
-            component="div"
-            sx={{ fontWeight: 700 }}
-          >
-            Admin Panel
-          </Typography>
+          <Box display="flex" alignItems="center" gap={1.5}>
+            <Box
+              sx={{
+                width: 32,
+                height: 32,
+                borderRadius: "8px",
+                bgcolor: "#3b82f6",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+              }}
+            >
+              <Typography
+                sx={{
+                  fontWeight: 800,
+                  fontSize: "1rem",
+                  color: "#fff",
+                  fontFamily: "'Inter', sans-serif",
+                }}
+              >
+                A
+              </Typography>
+            </Box>
+            <Typography
+              variant="h6"
+              sx={{
+                fontWeight: 700,
+                fontFamily: "'Inter', sans-serif",
+                letterSpacing: "-0.3px",
+                color: "#fff",
+              }}
+            >
+              Admin Panel
+            </Typography>
+          </Box>
 
-          {/* User Menu */}
           <Box display="flex" alignItems="center" gap={1}>
             <Typography
               variant="body2"
-              sx={{ mr: 1, display: { xs: "none", sm: "block" } }}
+              sx={{
+                mr: 1,
+                display: { xs: "none", sm: "block" },
+                fontFamily: "'Inter', sans-serif",
+                color: "#94a3b8",
+              }}
             >
               {user?.user_name}
             </Typography>
-            <IconButton onClick={handleMenuClick} sx={{ p: 0.5 }}>
-              <Avatar
-                src={user?.user_avatar}
-                sx={{ width: 40, height: 40, fontSize: "1rem" }}
-              >
-                {user?.user_name?.charAt(0) || "A"}
-              </Avatar>
-            </IconButton>
+            <Tooltip title="Tài khoản">
+              <IconButton onClick={handleMenuClick} sx={{ p: 0.5 }}>
+                <Avatar
+                  src={user?.user_avatar}
+                  sx={{
+                    width: 38,
+                    height: 38,
+                    fontSize: "0.95rem",
+                    bgcolor: "#3b82f6",
+                    fontFamily: "'Inter', sans-serif",
+                  }}
+                >
+                  {user?.user_name?.charAt(0) || "A"}
+                </Avatar>
+              </IconButton>
+            </Tooltip>
             <Menu
               anchorEl={anchorEl}
               open={Boolean(anchorEl)}
               onClose={handleMenuClose}
               anchorOrigin={{ vertical: "bottom", horizontal: "right" }}
               transformOrigin={{ vertical: "top", horizontal: "right" }}
+              PaperProps={{
+                sx: { borderRadius: "8px", mt: 0.5, minWidth: 160 },
+              }}
             >
               <MenuItem
                 onClick={() => {
                   navigate("/profile");
                   handleMenuClose();
                 }}
+                sx={{ fontFamily: "'Inter', sans-serif" }}
               >
                 <ListItemIcon>
                   <PersonIcon fontSize="small" />
                 </ListItemIcon>
-                Hồ sơ
+                Hồ sơ cá nhân
               </MenuItem>
-              <MenuItem onClick={handleLogout}>
+              <Divider />
+              <MenuItem
+                onClick={handleLogout}
+                sx={{ color: "error.main", fontFamily: "'Inter', sans-serif" }}
+              >
                 <ListItemIcon>
-                  <LogoutIcon fontSize="small" />
+                  <LogoutIcon fontSize="small" color="error" />
                 </ListItemIcon>
                 Đăng xuất
               </MenuItem>
@@ -163,9 +234,8 @@ const AdminLayout = () => {
         </Toolbar>
       </AppBar>
 
-      {/* Content Area with Sidebar and Main */}
+      {/* ── Content + Sidebar ────────────────────────────────────────── */}
       <Box sx={{ display: "flex", flexGrow: 1, mt: "64px" }}>
-        {/* Sidebar Drawer */}
         <Drawer
           variant="permanent"
           sx={{
@@ -174,66 +244,123 @@ const AdminLayout = () => {
             "& .MuiDrawer-paper": {
               width: drawerWidth,
               boxSizing: "border-box",
-              backgroundColor: "#fafafa",
+              bgcolor: "#fafafa",
               borderRight: "1px solid #e0e0e0",
+              mt: "64px",
+              height: "calc(100% - 64px)",
+              overflowX: "hidden",
             },
           }}
         >
-          {/* Navigation List */}
-          <List sx={{ pt: 2 }}>
-            {menuItems.map((item) => (
-              <ListItem
-                button
-                key={item.text}
-                onClick={() => navigate(item.path)}
-                selected={location.pathname === item.path}
-                sx={{
-                  mx: 1,
-                  mb: 0.5,
-                  borderRadius: 1,
-                  transition: "all 0.3s ease",
-                  "&:hover": {
-                    backgroundColor: "primary.light",
-                    color: "primary.contrastText",
-                    "& .MuiListItemIcon-root": {
-                      color: "primary.contrastText",
-                    },
-                  },
-                  backgroundColor:
-                    location.pathname === item.path
-                      ? "rgba(33, 150, 243, 0.1)"
-                      : "transparent",
-                }}
-              >
-                <ListItemIcon sx={{ minWidth: 40 }}>{item.icon}</ListItemIcon>
-                <ListItemText primary={item.text} />
-              </ListItem>
+          <Box sx={{ py: 1.5, overflowY: "auto", height: "100%" }}>
+            {menuGroups.map((group, gIdx) => (
+              <Box key={gIdx}>
+                {/* Section header */}
+                {group.label && (
+                  <Typography
+                    variant="caption"
+                    sx={{
+                      display: "block",
+                      px: 2.5,
+                      pt: gIdx === 0 ? 1 : 2,
+                      pb: 0.5,
+                      fontWeight: 700,
+                      fontSize: "0.68rem",
+                      letterSpacing: "0.08em",
+                      color: "#94a3b8",
+                      fontFamily: "'Inter', sans-serif",
+                    }}
+                  >
+                    {group.label}
+                  </Typography>
+                )}
+
+                <List dense disablePadding>
+                  {group.items.map((item) => {
+                    const selected = isSelected(item.path);
+                    return (
+                      <ListItem
+                        button
+                        key={item.text}
+                        onClick={() => navigate(item.path)}
+                        selected={selected}
+                        sx={{
+                          mx: 1,
+                          mb: 0.3,
+                          borderRadius: "8px",
+                          width: "calc(100% - 16px)",
+                          py: 0.8,
+                          transition: "all 0.15s ease",
+                          bgcolor: selected
+                            ? "rgba(25,118,210,0.1)"
+                            : "transparent",
+                          color: selected ? "primary.main" : "inherit",
+                          "&:hover": {
+                            backgroundColor: "primary.light",
+                            color: "primary.contrastText",
+                            "& .MuiListItemIcon-root": {
+                              color: "primary.contrastText",
+                            },
+                          },
+                          "& .MuiListItemIcon-root": {
+                            color: selected ? "primary.main" : undefined,
+                            minWidth: 36,
+                          },
+                        }}
+                      >
+                        <ListItemIcon>{item.icon}</ListItemIcon>
+                        <ListItemText
+                          primary={item.text}
+                          primaryTypographyProps={{
+                            fontSize: "0.855rem",
+                            fontWeight: selected ? 600 : 400,
+                            fontFamily: "'Inter', sans-serif",
+                          }}
+                        />
+                        {selected && (
+                          <Box
+                            sx={{
+                              width: 3,
+                              height: 20,
+                              bgcolor: "primary.main",
+                              borderRadius: 4,
+                              ml: 0.5,
+                            }}
+                          />
+                        )}
+                      </ListItem>
+                    );
+                  })}
+                </List>
+              </Box>
             ))}
-          </List>
+          </Box>
 
-          <Divider sx={{ my: 2 }} />
-
-          {/* Role Badge */}
-          <Box sx={{ p: 2, textAlign: "center", mt: "auto" }}>
+          {/* Footer */}
+          <Box
+            sx={{ p: 2, borderTop: "1px solid #e0e0e0", bgcolor: "#f8fafc" }}
+          >
             <Typography
               variant="caption"
-              color="text.secondary"
-              sx={{ fontWeight: 600 }}
+              sx={{
+                color: "#94a3b8",
+                fontWeight: 600,
+                fontFamily: "'Inter', sans-serif",
+                display: "block",
+              }}
             >
-              Vai trò: Quản trị viên
+              Quản trị viên
             </Typography>
             <Typography
               variant="caption"
-              color="text.secondary"
-              display="block"
-              sx={{ mt: 0.5 }}
+              sx={{ color: "#cbd5e1", fontFamily: "'Inter', sans-serif" }}
             >
-              Mã: {user?.user_id}
+              {user?.user_id}
             </Typography>
           </Box>
         </Drawer>
 
-        {/* Main Content */}
+        {/* ── Main Content ─────────────────────────────────────────── */}
         <Box
           component="main"
           sx={{

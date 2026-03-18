@@ -8,5 +8,8 @@ router.use(authorize('admin'));
 
 // Export Routes
 router.post('/data', exportController.exportData);
+router.get('/topics', exportController.exportTopics);
+router.get('/grades', exportController.exportGrades);
+router.get('/users', exportController.exportUsers);
 
 module.exports = router;

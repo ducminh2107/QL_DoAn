@@ -23,6 +23,7 @@ const RegistrationHistory = lazy(
 );
 const TopicProgress = lazy(() => import("./pages/student/TopicProgress"));
 const Grades = lazy(() => import("./pages/student/Grades"));
+const StudentNotifications = lazy(() => import("./pages/student/Notifications"));
 
 // Layout components
 // Teacher pages
@@ -38,6 +39,15 @@ const TeacherTopicEdit = lazy(() => import("./pages/teacher/TopicEdit"));
 const TeacherTopicCreate = lazy(() => import("./pages/teacher/TopicCreate"));
 const GuidedStudents = lazy(() => import("./pages/teacher/GuidedStudents"));
 const Notifications = lazy(() => import("./pages/teacher/Notifications"));
+const RubricEvaluation = lazy(() => import("./pages/teacher/RubricEvaluation"));
+const RubricView = lazy(() => import("./pages/teacher/RubricView"));
+const CouncilParticipation = lazy(
+  () => import("./pages/teacher/CouncilParticipation"),
+);
+const ProgressMonitoring = lazy(
+  () => import("./pages/teacher/ProgressMonitoring"),
+);
+const TeachingHistory = lazy(() => import("./pages/teacher/TeachingHistory"));
 
 // Admin pages
 const AdminLayout = lazy(() => import("./components/layout/AdminLayout"));
@@ -51,6 +61,21 @@ const PeriodManagement = lazy(
 );
 const CouncilManagement = lazy(() => import("./pages/admin/CouncilManagement"));
 const RubricManagement = lazy(() => import("./pages/admin/RubricManagement"));
+const SystemTopicsManagement = lazy(
+  () => import("./pages/admin/SystemTopicsManagement"),
+);
+const FacultyMajorManagement = lazy(
+  () => import("./pages/admin/FacultyMajorManagement"),
+);
+const TopicCategoriesManagement = lazy(
+  () => import("./pages/admin/TopicCategoriesManagement"),
+);
+const ScheduleManagement = lazy(
+  () => import("./pages/admin/ScheduleManagement"),
+);
+const SystemLogs = lazy(() => import("./pages/admin/SystemLogs"));
+const ImportExportTools = lazy(() => import("./pages/admin/ImportExportTools"));
+const SystemSettings = lazy(() => import("./pages/admin/SystemSettings"));
 
 // Layout components
 const MainLayout = lazy(() => import("./components/layout/MainLayout"));
@@ -189,6 +214,17 @@ function AppRoutes() {
           }
         />
 
+        <Route
+          path="/student/notifications"
+          element={
+            <ProtectedRoute roles={["student"]}>
+              <MainLayout>
+                <StudentNotifications />
+              </MainLayout>
+            </ProtectedRoute>
+          }
+        />
+
         {/* Teacher routes */}
         <Route
           path="/teacher"
@@ -289,6 +325,72 @@ function AppRoutes() {
           }
         />
 
+        <Route
+          path="/teacher/rubric-evaluation"
+          element={
+            <ProtectedRoute roles={["teacher"]}>
+              <MainLayout>
+                <RubricEvaluation />
+              </MainLayout>
+            </ProtectedRoute>
+          }
+        />
+
+        <Route
+          path="/teacher/rubric-view"
+          element={
+            <ProtectedRoute roles={["teacher"]}>
+              <MainLayout>
+                <RubricView />
+              </MainLayout>
+            </ProtectedRoute>
+          }
+        />
+
+        <Route
+          path="/teacher/councils"
+          element={
+            <ProtectedRoute roles={["teacher"]}>
+              <MainLayout>
+                <CouncilParticipation />
+              </MainLayout>
+            </ProtectedRoute>
+          }
+        />
+
+        <Route
+          path="/teacher/progress"
+          element={
+            <ProtectedRoute roles={["teacher"]}>
+              <MainLayout>
+                <ProgressMonitoring />
+              </MainLayout>
+            </ProtectedRoute>
+          }
+        />
+
+        <Route
+          path="/teacher/history"
+          element={
+            <ProtectedRoute roles={["teacher"]}>
+              <MainLayout>
+                <TeachingHistory />
+              </MainLayout>
+            </ProtectedRoute>
+          }
+        />
+
+        <Route
+          path="/teacher/notifications"
+          element={
+            <ProtectedRoute roles={["teacher"]}>
+              <MainLayout>
+                <Notifications />
+              </MainLayout>
+            </ProtectedRoute>
+          }
+        />
+
         {/* Admin routes */}
         <Route
           path="/admin"
@@ -300,13 +402,30 @@ function AppRoutes() {
         >
           <Route index element={<Navigate to="/admin/dashboard" replace />} />
           <Route path="dashboard" element={<AdminDashboard />} />
+          {/* Users */}
           <Route path="users" element={<UserManagement />} />
+          {/* Học kỳ & Đợt đăng ký */}
           <Route path="semesters" element={<SemesterManagement />} />
           <Route path="registration-periods" element={<PeriodManagement />} />
+          {/* Chấm điểm */}
           <Route path="councils" element={<CouncilManagement />} />
           <Route path="rubrics" element={<RubricManagement />} />
-          <Route path="reports" element={<div>Báo cáo sắp ra mắt</div>} />
-          <Route path="settings" element={<div>Cài đặt sắp ra mắt</div>} />
+          <Route path="schedules" element={<ScheduleManagement />} />
+          {/* Nội dung */}
+          <Route path="system-topics" element={<SystemTopicsManagement />} />
+          <Route path="faculty-major" element={<FacultyMajorManagement />} />
+          <Route
+            path="topic-categories"
+            element={<TopicCategoriesManagement />}
+          />
+          {/* Hệ thống */}
+          <Route
+            path="reports"
+            element={<Navigate to="/admin/dashboard" replace />}
+          />
+          <Route path="import-export" element={<ImportExportTools />} />
+          <Route path="logs" element={<SystemLogs />} />
+          <Route path="settings" element={<SystemSettings />} />
         </Route>
 
         {/* 404 */}

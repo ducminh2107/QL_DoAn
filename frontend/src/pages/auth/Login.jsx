@@ -17,8 +17,8 @@ import {
 import {
   Visibility,
   VisibilityOff,
-  School,
   LockPerson,
+  Email as EmailIcon,
 } from "@mui/icons-material";
 import { useForm } from "react-hook-form";
 import { yupResolver } from "@hookform/resolvers/yup";
@@ -166,7 +166,7 @@ const Login = () => {
                 InputProps={{
                   startAdornment: (
                     <InputAdornment position="start">
-                      <School />
+                      <EmailIcon />
                     </InputAdornment>
                   ),
                 }}
@@ -227,23 +227,7 @@ const Login = () => {
                 )}
               </Button>
 
-              {/* Demo credentials for development */}
-              <Alert severity="info" sx={{ mt: 3 }}>
-                <Typography variant="subtitle2" gutterBottom>
-                  📝 Tài khoản demo (chỉ dùng cho phát triển):
-                </Typography>
-                <Typography variant="caption" component="div">
-                  • <strong>Admin</strong>: admin@thesis.edu.vn / admin123
-                </Typography>
-                <Typography variant="caption" component="div">
-                  • <strong>Giảng viên</strong>: teacher@thesis.edu.vn /
-                  teacher123
-                </Typography>
-                <Typography variant="caption" component="div">
-                  • <strong>Sinh viên</strong>: student@thesis.edu.vn /
-                  student123
-                </Typography>
-              </Alert>
+
             </Box>
           </Paper>
 

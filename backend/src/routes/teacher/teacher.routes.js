@@ -6,6 +6,7 @@ const topicController = require('../../controllers/teacher/topic.controller');
 const studentController = require('../../controllers/teacher/student.controller');
 const gradingController = require('../../controllers/teacher/grading.controller');
 const extendedController = require('../../controllers/teacher/extended.controller');
+const notificationController = require('../../controllers/teacher/notification.controller');
 
 // Middleware
 const { protect, authorize } = require('../../middleware/auth');
@@ -18,8 +19,20 @@ const teacherValidation = require('../../validations/teacher.validation');
 router.use(protect);
 router.use(authorize('teacher'));
 
-// Topic Management Routes
+// Topic Approval Routes — phải khai báo TRƯỚC /topics/:id để Express không match sai
+router.get(
+  '/topics/pending-approval',
+  topicController.getPendingApprovalTopics
+);
+router.put(
+  '/topics/:id/approve',
+  validate(teacherValidation.approveTopic),
+  topicController.approveTopic
+);
+
+// Topic CRUD Routes
 router.get('/topics', topicController.getTeacherTopics);
+router.get('/topics/:id', topicController.getTopicById);
 router.post(
   '/topics',
   validate(teacherValidation.createTopic),
@@ -31,17 +44,6 @@ router.put(
   topicController.updateTopic
 );
 router.delete('/topics/:id', topicController.deleteTopic);
-
-// Topic Approval Routes
-router.get(
-  '/topics/pending-approval',
-  topicController.getPendingApprovalTopics
-);
-router.put(
-  '/topics/:id/approve',
-  validate(teacherValidation.approveTopic),
-  topicController.approveTopic
-);
 
 // Student Management Routes
 router.get(
@@ -81,5 +83,18 @@ router.get(
   '/teaching-history/:id/certificate',
   extendedController.downloadCertificate
 );
+
+// Notification Routes
+router.get(
+  '/notifications/unread-count',
+  notificationController.getUnreadCount
+);
+router.get('/notifications', notificationController.getNotifications);
+router.patch(
+  '/notifications/mark-all-read',
+  notificationController.markAllAsRead
+);
+router.patch('/notifications/:id/read', notificationController.markAsRead);
+router.delete('/notifications/:id', notificationController.deleteNotification);
 
 module.exports = router;

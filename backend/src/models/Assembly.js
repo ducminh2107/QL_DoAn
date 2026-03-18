@@ -16,15 +16,19 @@ const assemblySchema = new mongoose.Schema(
       ref: 'Major',
     },
     chairman: {
-      type: String,
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'User',
     },
     secretary: {
-      type: String,
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'User',
     },
     members: [
       {
-        member_id: String,
-        member_name: String,
+        member_id: {
+          type: mongoose.Schema.Types.ObjectId,
+          ref: 'User',
+        },
         role: {
           type: String,
           enum: ['member', 'expert'],

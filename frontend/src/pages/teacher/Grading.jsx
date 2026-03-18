@@ -61,6 +61,10 @@ const GradingPage = () => {
   });
   const [gradingHistory, setGradingHistory] = useState([]);
   const [stats, setStats] = useState({});
+  const [detailDialog, setDetailDialog] = useState({
+    open: false,
+    topic: null,
+  });
 
   useEffect(() => {
     loadGradingData();
@@ -97,27 +101,67 @@ const GradingPage = () => {
 
   const handleStartGrading = async (topic) => {
     try {
-      const response = await axios.get(
-        `/api/teacher/grading/rubric/${topic._id}?type=instructor`
-      );
+      // Load rubric chung từ admin (dùng cho toàn bộ ngành)
+      const rubricRes = await axios.get("/api/rubrics");
+      const allRubrics = rubricRes.data.data || [];
+
+      // Ưu tiên rubric loại "assembly", nếu không có thì lấy đầu tiên
+      const rubric =
+        allRubrics.find((r) => r.rubric_category === "assembly") ||
+        allRubrics.find((r) => r.rubric_category === "instructor") ||
+        allRubrics[0];
+
+      if (!rubric) {
+        toast.error("Chưa có rubric. Admin cần tạo rubric trước.");
+        return;
+      }
+
+      // Thử lấy điểm đã chấm trước đó (nếu có)
+      let existingEvals = null;
+      try {
+        const existingRes = await axios.get(
+          `/api/teacher/grading/rubric/${topic._id}?type=instructor`,
+        );
+        existingEvals =
+          existingRes.data.data?.existing_grading?.evaluations || null;
+      } catch {
+        // Chưa chấm lần nào — bình thường
+      }
+
+      // Build evaluations từ rubric admin
+      const evaluations = rubric.rubric_evaluations.map((item) => {
+        const prev = existingEvals?.find(
+          (e) => String(e.rubric_item_id) === String(item._id),
+        );
+        return {
+          rubric_item_id: item._id,
+          criteria_name: item.evaluation_criteria,
+          criteria_group: item.criteria_group || "",
+          clo: item.clo || "",
+          score: prev?.score || 0,
+          comment: prev?.comment || "",
+          max_score: item.weight || 1,
+          level_core: item.level_core || [],
+        };
+      });
+
       setGradingDialog({
         open: true,
-        topic: response.data.data.topic,
-        rubric: response.data.data.rubric,
-        evaluations:
-          response.data.data.existing_grading?.evaluations ||
-          response.data.data.rubric.rubric_evaluations.map((item) => ({
-            rubric_item_id: item._id,
-            criteria_name: item.evaluation_criteria,
-            score: 0,
-            comment: "",
-            max_score: 10,
-          })),
-        comments: response.data.data.existing_grading?.comments || "",
+        topic: topic,
+        rubric: rubric,
+        evaluations,
+        comments: "",
       });
-    } catch (error) {
+    } catch {
       toast.error("Không thể tải rubric chấm điểm");
     }
+  };
+
+  const handleViewDetails = (topic) => {
+    setDetailDialog({
+      open: true,
+      topic: topic,
+    });
   };
 
   const handleSubmitGrades = async () => {
@@ -126,9 +170,11 @@ const GradingPage = () => {
         `/api/teacher/grading/submit/${gradingDialog.topic._id}`,
         {
           type: "instructor",
+          rubric_id: gradingDialog.rubric?._id,
           evaluations: gradingDialog.evaluations,
           comments: gradingDialog.comments,
-        }
+          final_score: calculateTotalScore(),
+        },
       );
 
       toast.success("Chấm điểm thành công");
@@ -160,7 +206,7 @@ const GradingPage = () => {
   const calculateTotalScore = () => {
     return gradingDialog.evaluations.reduce(
       (sum, evalItem) => sum + (evalItem.score || 0),
-      0
+      0,
     );
   };
 
@@ -183,24 +229,49 @@ const GradingPage = () => {
     <Container maxWidth="xl" sx={{ mt: 3, mb: 4 }}>
       {/* Header */}
       <Box
-        display="flex"
-        justifyContent="space-between"
-        alignItems="center"
-        mb={4}
+        sx={{
+          mb: 4,
+          display: "flex",
+          justifyContent: "space-between",
+          alignItems: "center",
+          p: 4,
+          background: "linear-gradient(135deg, #10b981 0%, #059669 100%)",
+          borderRadius: "16px",
+          boxShadow: "0 10px 30px rgba(16, 185, 129, 0.2)",
+          color: "white",
+        }}
       >
-        <Typography variant="h4" sx={{ fontWeight: 600 }}>
-          📝 Chấm điểm đề tài
-        </Typography>
+        <Box>
+          <Typography
+            variant="h4"
+            sx={{ fontWeight: 800, letterSpacing: "-0.5px" }}
+          >
+            Chấm Điểm Đề Tài
+          </Typography>
+          <Typography variant="body1" sx={{ mt: 1, opacity: 0.9 }}>
+            Thực hiện đánh giá và cho điểm sinh viên dựa trên Rubric cài sẵn
+          </Typography>
+        </Box>
         <Box display="flex" gap={2}>
           <Chip
             icon={<PendingIcon />}
             label={`${gradingData.pending.length} cần chấm`}
-            color="warning"
+            sx={{
+              bgcolor: "rgba(255,255,255,0.2)",
+              color: "white",
+              fontWeight: 600,
+              border: "none",
+            }}
           />
           <Chip
             icon={<CheckCircleIcon />}
             label={`${gradingData.graded.length} đã chấm`}
-            color="success"
+            sx={{
+              bgcolor: "rgba(255,255,255,0.9)",
+              color: "#059669",
+              fontWeight: 600,
+              border: "none",
+            }}
           />
         </Box>
       </Box>
@@ -272,94 +343,106 @@ const GradingPage = () => {
 
       {/* Content based on tab */}
       {tabValue === 0 && (
-        <Grid container spacing={3}>
+        <>
           {gradingData.pending.length === 0 ? (
-            <Grid item xs={12}>
-              <Paper sx={{ p: 4, textAlign: "center" }}>
+            <Box sx={{ width: "100%", mt: 1 }}>
+              <Paper
+                sx={{
+                  p: 6,
+                  textAlign: "center",
+                  width: "100%",
+                  borderRadius: "16px",
+                  border: "1px dashed #e2e8f0",
+                  boxShadow: "none",
+                  boxSizing: "border-box",
+                }}
+              >
                 <CheckCircleIcon
-                  sx={{ fontSize: 60, color: "success.main", mb: 2 }}
+                  sx={{ fontSize: 64, color: "#10b981", mb: 2, opacity: 0.9 }}
                 />
-                <Typography variant="h6" gutterBottom>
-                  Không có đề tài nào cần chấm điểm
+                <Typography
+                  variant="h6"
+                  sx={{ fontWeight: 600, color: "#1e293b", mb: 1 }}
+                >
+                  Tuyệt vời! Không có đề tài nào cần chấm điểm
                 </Typography>
                 <Typography variant="body2" color="text.secondary">
-                  Tất cả đề tài đã được chấm điểm
+                  Tất cả các đề tài đã được bạn xử lý và chấm điểm xong.
                 </Typography>
               </Paper>
-            </Grid>
+            </Box>
           ) : (
-            gradingData.pending.map((topic) => (
-              <Grid item xs={12} md={6} key={topic._id}>
-                <Card>
-                  <CardContent>
-                    <Typography variant="h6" gutterBottom>
-                      {topic.topic_title}
-                    </Typography>
-                    <Box display="flex" gap={1} mb={2}>
-                      <Chip
-                        label={topic.topic_category?.topic_category_title}
-                        size="small"
-                      />
-                      <Chip
-                        icon={<GroupIcon />}
-                        label={`${topic.student_count} sinh viên`}
-                        size="small"
-                        variant="outlined"
-                      />
-                      {!topic.has_final_report && (
+            <Grid container spacing={3}>
+              {gradingData.pending.map((topic) => (
+                <Grid item xs={12} md={6} key={topic._id}>
+                  <Card>
+                    <CardContent>
+                      <Typography variant="h6" gutterBottom>
+                        {topic.topic_title}
+                      </Typography>
+                      <Box display="flex" gap={1} mb={2}>
                         <Chip
-                          label="Chưa nộp BC"
-                          color="warning"
+                          label={topic.topic_category?.topic_category_title}
                           size="small"
                         />
-                      )}
-                    </Box>
-                    <Typography
-                      variant="body2"
-                      color="text.secondary"
-                      paragraph
-                    >
-                      {topic.topic_description?.substring(0, 150)}...
-                    </Typography>
-                    <Box
-                      display="flex"
-                      justifyContent="space-between"
-                      alignItems="center"
-                    >
-                      <Typography variant="caption" color="text.secondary">
-                        Hạn chót:{" "}
-                        {topic.defense_schedule?.scheduled_date
-                          ? new Date(
-                              topic.defense_schedule.scheduled_date
-                            ).toLocaleDateString("vi-VN")
-                          : "Chưa có lịch"}
+                        <Chip
+                          icon={<GroupIcon />}
+                          label={`${topic.student_count} sinh viên`}
+                          size="small"
+                          variant="outlined"
+                        />
+                        {!topic.has_final_report && (
+                          <Chip
+                            label="Chưa nộp BC"
+                            color="warning"
+                            size="small"
+                          />
+                        )}
+                      </Box>
+                      <Typography
+                        variant="body2"
+                        color="text.secondary"
+                        paragraph
+                      >
+                        {topic.topic_description?.substring(0, 150)}...
                       </Typography>
-                      <Chip label="Chờ chấm" color="warning" size="small" />
-                    </Box>
-                  </CardContent>
-                  <CardActions>
-                    <Button
-                      size="small"
-                      startIcon={<GradeIcon />}
-                      onClick={() => handleStartGrading(topic)}
-                      disabled={!topic.has_final_report}
-                    >
-                      Bắt đầu chấm
-                    </Button>
-                    <Button
-                      size="small"
-                      onClick={() => {
-                        /* View topic details */
-                      }}
-                    >
-                      Xem chi tiết
-                    </Button>
-                  </CardActions>
-                </Card>
-              </Grid>
-            ))
+                      <Box
+                        display="flex"
+                        justifyContent="space-between"
+                        alignItems="center"
+                      >
+                        <Typography variant="caption" color="text.secondary">
+                          Hạn chót:{" "}
+                          {topic.defense_schedule?.scheduled_date
+                            ? new Date(
+                                topic.defense_schedule.scheduled_date,
+                              ).toLocaleDateString("vi-VN")
+                            : "Chưa có lịch"}
+                        </Typography>
+                        <Chip label="Chờ chấm" color="warning" size="small" />
+                      </Box>
+                    </CardContent>
+                    <CardActions>
+                      <Button
+                        size="small"
+                        startIcon={<GradeIcon />}
+                        onClick={() => handleStartGrading(topic)}
+                      >
+                        Bắt đầu chấm
+                      </Button>
+                      <Button
+                        size="small"
+                        onClick={() => handleViewDetails(topic)}
+                      >
+                        Xem chi tiết
+                      </Button>
+                    </CardActions>
+                  </Card>
+                </Grid>
+              ))}
+            </Grid>
           )}
-        </Grid>
+        </>
       )}
 
       {tabValue === 1 && (
@@ -388,7 +471,7 @@ const GradingPage = () => {
                   <TableCell>
                     <Typography variant="body2">
                       {topic.topic_group_student?.filter(
-                        (s) => s.status === "approved"
+                        (s) => s.status === "approved",
                       ).length || 0}{" "}
                       sinh viên
                     </Typography>
@@ -402,7 +485,7 @@ const GradingPage = () => {
                   <TableCell>
                     {topic.rubric_instructor?.submitted_at
                       ? new Date(
-                          topic.rubric_instructor.submitted_at
+                          topic.rubric_instructor.submitted_at,
                         ).toLocaleDateString("vi-VN")
                       : "N/A"}
                   </TableCell>
@@ -502,8 +585,9 @@ const GradingPage = () => {
             <Grid item xs={12}>
               <Alert severity="info">
                 <Typography variant="body2">
-                  Sử dụng thanh trượt để chấm điểm từng tiêu chí. Tổng điểm sẽ
-                  được tính tự động.
+                  Nhập điểm trực tiếp vào ô tương ứng với từng tiêu chí. Tổng
+                  điểm sẽ được cộng tự động. Điểm nhập không được vượt quá số
+                  điểm tối đa của mỗi mục.
                 </Typography>
               </Alert>
             </Grid>
@@ -518,27 +602,80 @@ const GradingPage = () => {
                     <Typography
                       variant="body2"
                       color="text.secondary"
-                      sx={{ minWidth: 60 }}
-                    >
-                      Điểm: {evalItem.score}
-                    </Typography>
-                    <Slider
-                      value={evalItem.score}
-                      onChange={(e, value) => handleScoreChange(index, value)}
-                      min={0}
-                      max={10}
-                      step={0.5}
-                      valueLabelDisplay="auto"
-                      sx={{ flex: 1 }}
-                    />
-                    <Typography
-                      variant="body2"
-                      color="text.secondary"
                       sx={{ minWidth: 80 }}
                     >
-                      / {evalItem.max_score}
+                      {evalItem.criteria_group && (
+                        <Typography
+                          variant="caption"
+                          color="text.secondary"
+                          display="block"
+                        >
+                          {evalItem.criteria_group}
+                        </Typography>
+                      )}
+                      Điểm: <strong>{evalItem.score.toFixed(2)}</strong> /{" "}
+                      {evalItem.max_score}
+                    </Typography>
+                    <Box
+                      sx={{
+                        flex: 1,
+                        display: "flex",
+                        justifyContent: "center",
+                      }}
+                    >
+                      <TextField
+                        type="number"
+                        value={evalItem.score}
+                        onChange={(e) => {
+                          const v = Math.min(
+                            evalItem.max_score,
+                            Math.max(0, parseFloat(e.target.value) || 0),
+                          );
+                          handleScoreChange(index, v);
+                        }}
+                        inputProps={{
+                          min: 0,
+                          max: evalItem.max_score,
+                          step: evalItem.max_score <= 1.5 ? 0.1 : 0.25,
+                          style: {
+                            textAlign: "center",
+                            fontSize: "1.2rem",
+                            fontWeight: 700,
+                          },
+                        }}
+                        sx={{ width: 100 }}
+                        size="small"
+                      />
+                    </Box>
+                    <Typography
+                      variant="h6"
+                      color="primary"
+                      sx={{ minWidth: 60, textAlign: "center" }}
+                    >
+                      {evalItem.score.toFixed(2)}
                     </Typography>
                   </Box>
+                  {/* Hiển thị mức xếp loại tương ứng */}
+                  {evalItem.level_core?.length > 0 &&
+                    (() => {
+                      const pct =
+                        evalItem.max_score > 0
+                          ? (evalItem.score / evalItem.max_score) * 100
+                          : 0;
+                      const matched = evalItem.level_core.find(
+                        (l) =>
+                          pct >= (l.min_score_pct ?? l.min_score ?? 0) &&
+                          pct <= (l.max_score_pct ?? l.max_score ?? 100),
+                      );
+                      return matched ? (
+                        <Alert severity="info" sx={{ mb: 1, py: 0.5 }}>
+                          <Typography variant="caption">
+                            <strong>{matched.level}:</strong>{" "}
+                            {matched.description}
+                          </Typography>
+                        </Alert>
+                      ) : null;
+                    })()}
                   <TextField
                     fullWidth
                     label="Nhận xét chi tiết"
@@ -553,31 +690,37 @@ const GradingPage = () => {
             ))}
 
             <Grid item xs={12}>
-              <Paper sx={{ p: 2, bgcolor: "primary.light", color: "white" }}>
-                <Typography variant="h6" gutterBottom>
-                  Tổng kết
+              <Paper sx={{ p: 2, bgcolor: "primary.main", color: "white" }}>
+                <Typography variant="h6" gutterBottom fontWeight={700}>
+                  Tổng kết — {gradingDialog.rubric?.rubric_name}
                 </Typography>
-                <Grid container spacing={2}>
+                <Grid container spacing={2} alignItems="center">
                   <Grid item xs={6}>
-                    <Typography variant="body1">
-                      Tổng điểm:{" "}
-                      <strong>{calculateTotalScore().toFixed(2)}/100</strong>
+                    <Typography variant="h4" fontWeight={700}>
+                      {calculateTotalScore().toFixed(2)}
+                      <Typography component="span" variant="body1">
+                        {" "}
+                        / 10.0
+                      </Typography>
+                    </Typography>
+                    <Typography variant="caption" sx={{ opacity: 0.85 }}>
+                      Tổng điểm
                     </Typography>
                   </Grid>
                   <Grid item xs={6}>
-                    <Typography variant="body1">
-                      Xếp loại:{" "}
-                      <strong>
-                        {calculateTotalScore() >= 9
-                          ? "A"
-                          : calculateTotalScore() >= 8
-                            ? "B"
-                            : calculateTotalScore() >= 7
-                              ? "C"
-                              : calculateTotalScore() >= 6
-                                ? "D"
-                                : "F"}
-                      </strong>
+                    <Typography variant="h4" fontWeight={700}>
+                      {calculateTotalScore() >= 9
+                        ? "A"
+                        : calculateTotalScore() >= 8
+                          ? "B"
+                          : calculateTotalScore() >= 7
+                            ? "C"
+                            : calculateTotalScore() >= 5
+                              ? "D"
+                              : "F"}
+                    </Typography>
+                    <Typography variant="caption" sx={{ opacity: 0.85 }}>
+                      Xếp loại
                     </Typography>
                   </Grid>
                 </Grid>
@@ -615,6 +758,70 @@ const GradingPage = () => {
             startIcon={<GradeIcon />}
           >
             Lưu điểm
+          </Button>
+        </DialogActions>
+      </Dialog>
+
+      {/* Topic Detail Dialog */}
+      <Dialog
+        open={detailDialog.open}
+        onClose={() => setDetailDialog({ ...detailDialog, open: false })}
+        maxWidth="sm"
+        fullWidth
+      >
+        <DialogTitle>{detailDialog.topic?.topic_title}</DialogTitle>
+        <DialogContent>
+          <Grid container spacing={2} sx={{ mt: 1 }}>
+            <Grid item xs={12}>
+              <Typography variant="subtitle2" color="text.secondary">
+                Mô tả đề tài
+              </Typography>
+              <Typography variant="body2">
+                {detailDialog.topic?.topic_description}
+              </Typography>
+            </Grid>
+            <Grid item xs={12}>
+              <Typography variant="subtitle2" color="text.secondary">
+                Thông tin sinh viên
+              </Typography>
+              <Typography variant="body2">
+                Số lượng: {detailDialog.topic?.student_count || 0} sinh viên
+              </Typography>
+            </Grid>
+            <Grid item xs={12}>
+              <Typography variant="subtitle2" color="text.secondary">
+                Danh mục
+              </Typography>
+              <Chip
+                label={detailDialog.topic?.topic_category?.topic_category_title}
+                size="small"
+              />
+            </Grid>
+            {detailDialog.topic?.has_final_report && (
+              <Grid item xs={12}>
+                <Typography variant="subtitle2" color="success.main">
+                  ✓ Đã nộp báo cáo cuối cùng
+                </Typography>
+              </Grid>
+            )}
+          </Grid>
+        </DialogContent>
+        <DialogActions>
+          <Button
+            onClick={() => setDetailDialog({ ...detailDialog, open: false })}
+          >
+            Đóng
+          </Button>
+          <Button
+            onClick={() => {
+              setDetailDialog({ ...detailDialog, open: false });
+              handleStartGrading(detailDialog.topic);
+            }}
+            variant="contained"
+            color="primary"
+            startIcon={<GradeIcon />}
+          >
+            Chấm điểm
           </Button>
         </DialogActions>
       </Dialog>

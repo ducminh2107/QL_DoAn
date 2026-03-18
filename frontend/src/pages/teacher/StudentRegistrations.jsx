@@ -57,9 +57,7 @@ const StudentRegistrations = () => {
   const loadRegistrations = async () => {
     try {
       setLoading(true);
-      console.log("📌 Loading student registrations...");
       const response = await axios.get("/api/teacher/students/registrations");
-      console.log("📌 Response received:", response.data);
       setRegistrations(response.data.data || []);
       setTopics(response.data.topics || []);
     } catch (error) {
@@ -79,11 +77,11 @@ const StudentRegistrations = () => {
         {
           action,
           feedback,
-        }
+        },
       );
 
       toast.success(
-        `Đã ${action === "approve" ? "chấp nhận" : "từ chối"} đăng ký`
+        `Đã ${action === "approve" ? "chấp nhận" : "từ chối"} đăng ký`,
       );
       setActionDialog({
         open: false,
@@ -100,7 +98,7 @@ const StudentRegistrations = () => {
   const handleRemoveStudent = async (registration) => {
     if (
       !window.confirm(
-        `Xác nhận xóa sinh viên ${registration.student_name} khỏi đề tài?`
+        `Xác nhận xóa sinh viên ${registration.student_name} khỏi đề tài?`,
       )
     ) {
       return;
@@ -111,7 +109,7 @@ const StudentRegistrations = () => {
         `/api/teacher/students/${registration.student_id}/topics/${registration.topic_id}`,
         {
           data: { reason: "Giảng viên xóa khỏi nhóm" },
-        }
+        },
       );
 
       toast.success("Đã xóa sinh viên khỏi đề tài");
@@ -138,19 +136,45 @@ const StudentRegistrations = () => {
     <Container maxWidth="xl" sx={{ mt: 3, mb: 4 }}>
       {/* Header */}
       <Box
-        display="flex"
-        justifyContent="space-between"
-        alignItems="center"
-        mb={3}
+        sx={{
+          mb: 4,
+          display: "flex",
+          justifyContent: "space-between",
+          alignItems: "center",
+          p: 4,
+          background: "linear-gradient(135deg, #4f46e5 0%, #06b6d4 100%)",
+          borderRadius: "16px",
+          boxShadow: "0 10px 30px rgba(6, 182, 212, 0.2)",
+          color: "white",
+        }}
       >
-        <Typography variant="h4" sx={{ fontWeight: 600 }}>
-          👥 Quản lý đăng ký sinh viên
-        </Typography>
-        <Box display="flex" alignItems="center" gap={2}>
-          <Typography variant="body2" color="text.secondary">
-            {registrations.length} đăng ký chờ xử lý
+        <Box>
+          <Typography
+            variant="h4"
+            sx={{ fontWeight: 800, letterSpacing: "-0.5px" }}
+          >
+            Quản Lý Đăng Ký Sinh Viên
           </Typography>
-          <FormControl sx={{ minWidth: 200 }}>
+          <Typography variant="body1" sx={{ mt: 1, opacity: 0.9 }}>
+            Xét duyệt sinh viên đăng ký tham gia đề tài của bạn
+          </Typography>
+        </Box>
+        <Box display="flex" alignItems="center" gap={2}>
+          <Typography
+            variant="body2"
+            sx={{
+              bgcolor: "rgba(255,255,255,0.2)",
+              px: 2,
+              py: 1,
+              borderRadius: "8px",
+              fontWeight: 600,
+            }}
+          >
+            {registrations.length} chờ xử lý
+          </Typography>
+          <FormControl
+            sx={{ minWidth: 200, bgcolor: "white", borderRadius: "8px" }}
+          >
             <InputLabel>Lọc theo đề tài</InputLabel>
             <Select
               value={selectedTopic}
@@ -170,7 +194,15 @@ const StudentRegistrations = () => {
       </Box>
 
       {/* Registrations Table */}
-      <Paper sx={{ width: "100%", overflow: "hidden" }}>
+      <Paper
+        sx={{
+          width: "100%",
+          overflow: "hidden",
+          borderRadius: "16px",
+          border: "1px solid #e2e8f0",
+          boxShadow: "0 4px 6px rgba(0,0,0,0.02)",
+        }}
+      >
         {filteredRegistrations.length === 0 ? (
           <Box p={4} textAlign="center">
             <CheckCircleIcon
@@ -234,11 +266,11 @@ const StudentRegistrations = () => {
                     </TableCell>
                     <TableCell>
                       {new Date(reg.registration_date).toLocaleDateString(
-                        "vi-VN"
+                        "vi-VN",
                       )}
                       <Typography variant="caption" display="block">
                         {new Date(reg.registration_date).toLocaleTimeString(
-                          "vi-VN"
+                          "vi-VN",
                         )}
                       </Typography>
                     </TableCell>

@@ -1,8 +1,6 @@
 import React, { useState, useEffect } from "react";
 import {
-  Container,
   Grid,
-  Paper,
   Typography,
   Box,
   Card,
@@ -10,12 +8,10 @@ import {
   Button,
   Chip,
   LinearProgress,
-  Divider,
-  List,
-  ListItem,
-  ListItemText,
-  ListItemIcon,
   Avatar,
+  Stack,
+  IconButton,
+  Divider,
 } from "@mui/material";
 import {
   School as SchoolIcon,
@@ -24,15 +20,69 @@ import {
   Schedule as ScheduleIcon,
   CheckCircle as CheckCircleIcon,
   Pending as PendingIcon,
-  Warning as WarningIcon,
   Add as AddIcon,
   Notifications as NotificationsIcon,
+  ArrowForward as ArrowIcon,
+  TrendingUp as TrendingUpIcon,
+  EmojiEvents as TrophyIcon,
+  Bolt as BoltIcon,
+  PersonSearch as PersonSearchIcon,
+  GradeRounded as GradeIcon,
+  AutoAwesome as SparkleIcon,
+  LocationOn as RoomIcon,
+  AccessTime as TimeIcon,
 } from "@mui/icons-material";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../../contexts/AuthContext";
 import axios from "axios";
 import toast from "react-hot-toast";
 
+// ─────────────────────────────────────────────────────────────────
+// Colour palette
+// ─────────────────────────────────────────────────────────────────
+const C = {
+  primary: "#0ea5e9", // sky-500
+  primaryDk: "#0369a1", // sky-700
+  teal: "#14b8a6", // teal-500
+  emerald: "#10b981", // emerald-500
+  amber: "#f59e0b", // amber-500
+  rose: "#f43f5e", // rose-500
+  violet: "#8b5cf6", // violet-500
+  slate: "#64748b",
+};
+
+// ─────────────────────────────────────────────────────────────────
+const alpha = (hex, op) => {
+  const r = parseInt(hex.slice(1, 3), 16);
+  const g = parseInt(hex.slice(3, 5), 16);
+  const b = parseInt(hex.slice(5, 7), 16);
+  return `rgba(${r},${g},${b},${op})`;
+};
+
+// ─────────────────────────────────────────────────────────────────
+const GlassCard = ({ children, hover = true, sx = {} }) => (
+  <Card
+    elevation={0}
+    sx={{
+      borderRadius: "24px",
+      background: "#fff",
+      border: "1px solid #e2e8f0",
+      boxShadow: "0 4px 24px rgba(0,0,0,0.05)",
+      transition: "all 0.3s ease",
+      ...(hover && {
+        "&:hover": {
+          transform: "translateY(-4px)",
+          boxShadow: "0 16px 48px rgba(0,0,0,0.1)",
+        },
+      }),
+      ...sx,
+    }}
+  >
+    {children}
+  </Card>
+);
+
+// ─────────────────────────────────────────────────────────────────
 const TeacherDashboard = () => {
   const navigate = useNavigate();
   const { user } = useAuth();
@@ -52,14 +102,12 @@ const TeacherDashboard = () => {
   const loadDashboardData = async () => {
     try {
       setLoading(true);
-
       const [topicsRes, registrationsRes] = await Promise.all([
         axios.get("/api/teacher/topics?limit=5"),
         axios.get("/api/teacher/students/registrations"),
       ]);
 
-      // Mock data for other sections
-      const mockData = {
+      setDashboardData({
         stats: topicsRes.data.stats || {
           total: 0,
           my_created: 0,
@@ -73,607 +121,1048 @@ const TeacherDashboard = () => {
             (t) => t.topic_teacher_status === "pending",
           ) || [],
         pendingRegistrations: registrationsRes.data.data || [],
-        upcomingDefenses: [
-          {
-            title: "Hệ thống quản lý thư viện",
-            date: "2024-04-15",
-            time: "08:00",
-            room: "A101",
-          },
-          {
-            title: "Ứng dụng học tiếng Anh",
-            date: "2024-04-18",
-            time: "13:30",
-            room: "B202",
-          },
-        ],
-        recentActivities: [
-          {
-            type: "grade",
-            title: 'Đã chấm điểm đề tài "Hệ thống E-Learning"',
-            time: "2 giờ trước",
-          },
-          {
-            type: "approval",
-            title: "Đã duyệt đề tài của Nguyễn Văn A",
-            time: "1 ngày trước",
-          },
-          {
-            type: "feedback",
-            title: "Đã gửi phản hồi cho nhóm KTPM",
-            time: "2 ngày trước",
-          },
-        ],
-      };
-
-      setDashboardData(mockData);
+        upcomingDefenses: [],
+        recentActivities: [],
+      });
     } catch (error) {
-      console.error("❌ Failed to load dashboard data:", error);
-      console.error("❌ Error response:", error.response?.data);
-      const errorMessage =
-        error.response?.data?.message || "Không thể tải dữ liệu dashboard";
-      toast.error(errorMessage);
+      toast.error(
+        error.response?.data?.message || "Không thể tải dữ liệu dashboard",
+      );
     } finally {
       setLoading(false);
     }
   };
 
-  const getStatusColor = (status) => {
-    switch (status) {
-      case "approved":
-        return "success";
-      case "pending":
-        return "warning";
-      case "rejected":
-        return "error";
-      case "need_revision":
-        return "info";
-      default:
-        return "default";
-    }
+  const greet = () => {
+    const h = new Date().getHours();
+    if (h < 12) return "Chào buổi sáng";
+    if (h < 18) return "Chào buổi chiều";
+    return "Chào buổi tối";
   };
 
-  const getStatusIcon = (status) => {
-    switch (status) {
-      case "approved":
-        return <CheckCircleIcon />;
-      case "pending":
-        return <PendingIcon />;
-      case "rejected":
-        return <WarningIcon />;
-      default:
-        return <PendingIcon />;
-    }
-  };
-
+  // ── Loading ────────────────────────────────────────────────────
   if (loading) {
     return (
-      <Container>
-        <LinearProgress />
-      </Container>
+      <Box
+        sx={{
+          minHeight: "100vh",
+          background: `linear-gradient(135deg, ${C.primary} 0%, ${C.teal} 100%)`,
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+        }}
+      >
+        <Box sx={{ textAlign: "center", color: "#fff" }}>
+          <SparkleIcon sx={{ fontSize: 60, mb: 2 }} />
+          <LinearProgress
+            sx={{
+              width: 200,
+              borderRadius: 4,
+              height: 6,
+              bgcolor: "rgba(255,255,255,0.3)",
+              "& .MuiLinearProgress-bar": { bgcolor: "#fff" },
+            }}
+          />
+          <Typography sx={{ mt: 2, opacity: 0.85, fontWeight: 600 }}>
+            Đang tải dữ liệu...
+          </Typography>
+        </Box>
+      </Box>
     );
   }
 
+  // ── Stat cards ──────────────────────────────────────────────────
+  const statCards = [
+    {
+      label: "Tổng đề tài",
+      value: dashboardData.stats.total || 0,
+      color: C.primary,
+      bg: "#e0f2fe",
+      icon: <AssignmentIcon />,
+    },
+    {
+      label: "Chờ duyệt",
+      value: dashboardData.stats.pending_approval || 0,
+      color: C.amber,
+      bg: "#fef3c7",
+      icon: <PendingIcon />,
+    },
+    {
+      label: "Đang thực hiện",
+      value: dashboardData.stats.in_progress || 0,
+      color: C.emerald,
+      bg: "#d1fae5",
+      icon: <TrendingUpIcon />,
+    },
+    {
+      label: "SV chờ duyệt",
+      value: dashboardData.pendingRegistrations.length,
+      color: C.violet,
+      bg: "#ede9fe",
+      icon: <GroupIcon />,
+    },
+    {
+      label: "Đã hoàn thành",
+      value: dashboardData.stats.completed || 0,
+      color: C.teal,
+      bg: "#ccfbf1",
+      icon: <TrophyIcon />,
+    },
+    {
+      label: "Đang hướng dẫn",
+      value: dashboardData.stats.my_guided || 0,
+      color: C.rose,
+      bg: "#ffe4e6",
+      icon: <SchoolIcon />,
+    },
+  ];
+
+  // ── Quick action buttons ────────────────────────────────────────
+  const quickActions = [
+    {
+      label: "Quản lý đề tài",
+      icon: <AssignmentIcon />,
+      path: "/teacher/topics",
+      color: C.primary,
+    },
+    {
+      label: "Duyệt đề tài",
+      icon: <PendingIcon />,
+      path: "/teacher/topics/pending-approval",
+      color: C.amber,
+    },
+    {
+      label: "Duyệt đăng ký",
+      icon: <GroupIcon />,
+      path: "/teacher/students/registrations",
+      color: C.violet,
+    },
+    {
+      label: "Chấm điểm",
+      icon: <GradeIcon />,
+      path: "/teacher/grading",
+      color: C.emerald,
+    },
+    {
+      label: "Sinh viên HD",
+      icon: <PersonSearchIcon />,
+      path: "/teacher/students/guided",
+      color: C.teal,
+    },
+    {
+      label: "Gửi thông báo",
+      icon: <NotificationsIcon />,
+      path: "/teacher/notifications",
+      color: C.rose,
+    },
+  ];
+
+  const activityIcon = (type) => {
+    if (type === "grade")
+      return <GradeIcon sx={{ color: C.primary, fontSize: 20 }} />;
+    if (type === "approval")
+      return <CheckCircleIcon sx={{ color: C.emerald, fontSize: 20 }} />;
+    return <AssignmentIcon sx={{ color: C.violet, fontSize: 20 }} />;
+  };
+
+  const completionRate =
+    dashboardData.stats.total > 0
+      ? Math.round(
+          (dashboardData.stats.completed / dashboardData.stats.total) * 100,
+        )
+      : 0;
+
+  // ── Render ──────────────────────────────────────────────────────
   return (
-    <Container maxWidth="xl" sx={{ mt: 3, mb: 4 }}>
-      {/* Welcome Header */}
-      <Paper sx={{ p: 3, mb: 4, bgcolor: "primary.light", color: "white" }}>
-        <Grid container alignItems="center" spacing={2}>
-          <Grid item>
-            <Avatar
-              src={user?.user_avatar}
-              sx={{
-                width: 80,
-                height: 80,
-                bgcolor: "white",
-                color: "primary.main",
-                fontSize: "2rem",
-                fontWeight: 800,
-              }}
-            >
-              {user?.user_name?.charAt(0)}
-            </Avatar>
-          </Grid>
-          <Grid item xs>
-            <Typography variant="h4" gutterBottom>
-              Chào mừng Giảng viên, {user?.user_name}
-            </Typography>
-            <Typography variant="body1">
-              Quản lý đề tài, sinh viên và chấm điểm từ một nơi
-            </Typography>
-          </Grid>
-          <Grid item>
+    <Box
+      sx={{
+        minHeight: "100vh",
+        background:
+          "linear-gradient(160deg,#f0f9ff 0%,#f0fdf4 60%,#fdf4ff 100%)",
+        pb: 6,
+      }}
+    >
+      {/* ╔══════════════════  HERO HEADER  ══════════════════════╗ */}
+      <Box
+        sx={{
+          background: `linear-gradient(135deg, ${C.primary} 0%, ${C.teal} 100%)`,
+          pt: { xs: 4, md: 5 },
+          pb: { xs: 10, md: 12 },
+          px: { xs: 3, md: 6 },
+          position: "relative",
+          overflow: "hidden",
+        }}
+      >
+        {/* decorative blobs */}
+        {[
+          { top: -80, right: -80, sz: 280, op: 0.1 },
+          { top: 40, right: 160, sz: 120, op: 0.07 },
+          { bottom: -100, left: -50, sz: 320, op: 0.09 },
+        ].map((b, i) => (
+          <Box
+            key={i}
+            sx={{
+              position: "absolute",
+              borderRadius: "50%",
+              background: "#fff",
+              width: b.sz,
+              height: b.sz,
+              top: b.top,
+              right: b.right,
+              bottom: b.bottom,
+              left: b.left,
+              opacity: b.op,
+            }}
+          />
+        ))}
+
+        <Box sx={{ position: "relative", zIndex: 2 }}>
+          <Box
+            sx={{
+              display: "flex",
+              justifyContent: "space-between",
+              alignItems: "flex-start",
+            }}
+          >
+            {/* Greeting */}
+            <Stack direction="row" spacing={2.5} alignItems="center">
+              <Avatar
+                src={user?.user_avatar}
+                sx={{
+                  width: 76,
+                  height: 76,
+                  border: "3px solid rgba(255,255,255,0.6)",
+                  boxShadow: "0 8px 32px rgba(0,0,0,0.2)",
+                  fontSize: "2rem",
+                  fontWeight: 900,
+                  background: "linear-gradient(135deg,#fff 0%,#cffafe 100%)",
+                  color: C.primaryDk,
+                }}
+              >
+                {user?.user_name?.charAt(0)}
+              </Avatar>
+              <Box>
+                <Typography
+                  variant="body2"
+                  sx={{
+                    color: "rgba(255,255,255,0.8)",
+                    fontWeight: 600,
+                    mb: 0.3,
+                  }}
+                >
+                  {greet()} 👋
+                </Typography>
+                <Typography
+                  variant="h4"
+                  sx={{
+                    color: "#fff",
+                    fontWeight: 900,
+                    letterSpacing: "-0.02em",
+                    lineHeight: 1.1,
+                  }}
+                >
+                  {user?.user_name || "Giảng viên"}
+                </Typography>
+                <Stack direction="row" spacing={1} sx={{ mt: 1 }}>
+                  <Chip
+                    label={user?.user_id}
+                    size="small"
+                    sx={{
+                      bgcolor: "rgba(255,255,255,0.2)",
+                      color: "#fff",
+                      fontWeight: 700,
+                      borderRadius: "8px",
+                    }}
+                  />
+                  <Chip
+                    label={
+                      user?.user_faculty?.faculty_title ||
+                      user?.user_faculty ||
+                      "Giảng viên"
+                    }
+                    size="small"
+                    sx={{
+                      bgcolor: "rgba(255,255,255,0.15)",
+                      color: "rgba(255,255,255,0.9)",
+                      fontWeight: 600,
+                      borderRadius: "8px",
+                    }}
+                  />
+                </Stack>
+              </Box>
+            </Stack>
+
+            {/* CTA */}
             <Button
               variant="contained"
-              onClick={() => navigate("/teacher/topics/create")}
               startIcon={<AddIcon />}
-              size="large"
+              onClick={() => navigate("/teacher/topics/create")}
               sx={{
-                borderRadius: "12px",
-                px: 4,
-                py: 1.5,
-                bgcolor: "white",
-                color: "primary.main",
-                fontWeight: 700,
+                bgcolor: "#fff",
+                color: C.primaryDk,
+                fontWeight: 800,
+                borderRadius: "14px",
                 textTransform: "none",
-                fontSize: "1rem",
-                boxShadow: "0 10px 15px -3px rgba(0,0,0,0.1)",
+                px: 3,
+                py: 1.3,
+                fontSize: "0.95rem",
+                boxShadow: "0 8px 24px rgba(0,0,0,0.15)",
                 "&:hover": {
-                  bgcolor: "#f8fafc",
+                  bgcolor: "#f0f9ff",
                   transform: "translateY(-2px)",
-                  boxShadow: "0 20px 25px -5px rgba(0,0,0,0.1)",
                 },
-                transition: "all 0.2s ease",
+                transition: "all 0.25s",
+                display: { xs: "none", sm: "flex" },
               }}
             >
               Tạo đề tài mới
             </Button>
-          </Grid>
-        </Grid>
-      </Paper>
+          </Box>
+        </Box>
+      </Box>
 
-      {/* Quick Stats */}
-      <Grid container spacing={3} sx={{ mb: 4 }}>
-        <Grid item xs={12} sm={6} md={4} lg={2}>
-          <Card>
-            <CardContent sx={{ textAlign: "center" }}>
-              <Typography variant="h3" color="primary">
-                {dashboardData.stats.total || 0}
-              </Typography>
-              <Typography variant="body2" color="text.secondary">
-                Tổng đề tài
-              </Typography>
-            </CardContent>
-          </Card>
-        </Grid>
-
-        <Grid item xs={12} sm={6} md={4} lg={2}>
-          <Card>
-            <CardContent sx={{ textAlign: "center" }}>
-              <Typography variant="h3" color="warning.main">
-                {dashboardData.stats.pending_approval || 0}
-              </Typography>
-              <Typography variant="body2" color="text.secondary">
-                Chờ duyệt
-              </Typography>
-            </CardContent>
-          </Card>
-        </Grid>
-
-        <Grid item xs={12} sm={6} md={4} lg={2}>
-          <Card>
-            <CardContent sx={{ textAlign: "center" }}>
-              <Typography variant="h3" color="success.main">
-                {dashboardData.stats.in_progress || 0}
-              </Typography>
-              <Typography variant="body2" color="text.secondary">
-                Đang thực hiện
-              </Typography>
-            </CardContent>
-          </Card>
-        </Grid>
-
-        <Grid item xs={12} sm={6} md={4} lg={2}>
-          <Card>
-            <CardContent sx={{ textAlign: "center" }}>
-              <Typography variant="h3" color="info.main">
-                {dashboardData.pendingRegistrations.length || 0}
-              </Typography>
-              <Typography variant="body2" color="text.secondary">
-                Đăng ký chờ
-              </Typography>
-            </CardContent>
-          </Card>
-        </Grid>
-
-        <Grid item xs={12} sm={6} md={4} lg={2}>
-          <Card>
-            <CardContent sx={{ textAlign: "center" }}>
-              <Typography variant="h3" color="secondary.main">
-                {dashboardData.stats.completed || 0}
-              </Typography>
-              <Typography variant="body2" color="text.secondary">
-                Đã hoàn thành
-              </Typography>
-            </CardContent>
-          </Card>
-        </Grid>
-
-        <Grid item xs={12} sm={6} md={4} lg={2}>
-          <Card>
-            <CardContent sx={{ textAlign: "center" }}>
-              <Typography variant="h3" color="text.primary">
-                {dashboardData.stats.my_guided || 0}
-              </Typography>
-              <Typography variant="body2" color="text.secondary">
-                Đang hướng dẫn
-              </Typography>
-            </CardContent>
-          </Card>
-        </Grid>
-      </Grid>
-
-      {/* Main Content */}
-      <Grid container spacing={3}>
-        {/* Left Column - Quick Actions & Pending Items */}
-        <Grid item xs={12} lg={8}>
-          {/* Quick Actions */}
-          <Paper sx={{ p: 3, mb: 3 }}>
-            <Typography
-              variant="h6"
-              gutterBottom
-              sx={{ display: "flex", alignItems: "center" }}
-            >
-              <AssignmentIcon sx={{ mr: 1 }} /> Thao tác nhanh
-            </Typography>
-            <Grid container spacing={2}>
-              <Grid item xs={12} sm={6} md={4}>
-                <Button
-                  fullWidth
-                  variant="outlined"
-                  startIcon={<AssignmentIcon />}
-                  onClick={() => navigate("/teacher/topics")}
-                >
-                  Quản lý đề tài
-                </Button>
-              </Grid>
-              <Grid item xs={12} sm={6} md={4}>
-                <Button
-                  fullWidth
-                  variant="outlined"
-                  startIcon={<PendingIcon />}
-                  onClick={() => navigate("/teacher/topics/pending-approval")}
-                >
-                  Duyệt đề tài
-                </Button>
-              </Grid>
-              <Grid item xs={12} sm={6} md={4}>
-                <Button
-                  fullWidth
-                  variant="outlined"
-                  startIcon={<GroupIcon />}
-                  onClick={() => navigate("/teacher/students/registrations")}
-                >
-                  Duyệt đăng ký
-                </Button>
-              </Grid>
-              <Grid item xs={12} sm={6} md={4}>
-                <Button
-                  fullWidth
-                  variant="outlined"
-                  startIcon={<SchoolIcon />}
-                  onClick={() => navigate("/teacher/grading")}
-                >
-                  Chấm điểm
-                </Button>
-              </Grid>
-              <Grid item xs={12} sm={6} md={4}>
-                <Button
-                  fullWidth
-                  variant="outlined"
-                  startIcon={<GroupIcon />}
-                  onClick={() => navigate("/teacher/students/guided")}
-                >
-                  Sinh viên HD
-                </Button>
-              </Grid>
-              <Grid item xs={12} sm={6} md={4}>
-                <Button
-                  fullWidth
-                  variant="outlined"
-                  startIcon={<NotificationsIcon />}
-                  onClick={() => navigate("/teacher/notifications")}
-                >
-                  Gửi thông báo
-                </Button>
-              </Grid>
-            </Grid>
-          </Paper>
-
-          {/* Pending Topics */}
-          <Paper sx={{ p: 3, mb: 3 }}>
-            <Box
-              display="flex"
-              justifyContent="space-between"
-              alignItems="center"
-              mb={2}
-            >
-              <Typography
-                variant="h6"
-                sx={{ display: "flex", alignItems: "center" }}
+      {/* ╔═════════════  STATS ROW (floating over hero)  ════════╗ */}
+      <Box
+        sx={{ px: { xs: 2, md: 5 }, mt: -6, position: "relative", zIndex: 3 }}
+      >
+        <Grid container spacing={2}>
+          {statCards.map((s, i) => (
+            <Grid item xs={6} sm={4} md={2} key={i}>
+              <Card
+                elevation={0}
+                sx={{
+                  borderRadius: "20px",
+                  background: "#fff",
+                  boxShadow: "0 8px 32px rgba(0,0,0,0.08)",
+                  border: "1px solid rgba(255,255,255,0.9)",
+                  transition: "all 0.3s",
+                  "&:hover": {
+                    transform: "translateY(-4px)",
+                    boxShadow: "0 16px 48px rgba(0,0,0,0.12)",
+                  },
+                }}
               >
-                <PendingIcon sx={{ mr: 1 }} /> Đề tài chờ duyệt
-              </Typography>
-              <Button
-                size="small"
-                onClick={() => navigate("/teacher/topics/pending-approval")}
-              >
-                Xem tất cả
-              </Button>
-            </Box>
-
-            {dashboardData.pendingTopics.length > 0 ? (
-              <List>
-                {dashboardData.pendingTopics.slice(0, 3).map((topic) => (
-                  <ListItem
-                    key={topic._id}
-                    button
-                    onClick={() =>
-                      navigate(`/teacher/topics/${topic._id}/review`)
-                    }
+                <CardContent sx={{ p: 2.5, "&:last-child": { pb: 2.5 } }}>
+                  <Box
                     sx={{
-                      mb: 1,
-                      borderRadius: 1,
-                      "&:hover": { bgcolor: "action.hover" },
+                      width: 42,
+                      height: 42,
+                      borderRadius: "12px",
+                      bgcolor: s.bg,
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      mb: 1.5,
+                      "& svg": { fontSize: 21, color: s.color },
                     }}
                   >
-                    <ListItemIcon>
-                      {getStatusIcon(topic.topic_teacher_status)}
-                    </ListItemIcon>
-                    <ListItemText
-                      primary={topic.topic_title}
-                      secondary={
-                        <Box
-                          component="span"
-                          display="flex"
-                          alignItems="center"
+                    {s.icon}
+                  </Box>
+                  <Typography
+                    sx={{
+                      fontSize: "1.65rem",
+                      fontWeight: 900,
+                      color: "#0f172a",
+                      lineHeight: 1,
+                    }}
+                  >
+                    {s.value}
+                  </Typography>
+                  <Typography
+                    variant="caption"
+                    sx={{
+                      color: "#64748b",
+                      fontWeight: 600,
+                      mt: 0.4,
+                      display: "block",
+                    }}
+                  >
+                    {s.label}
+                  </Typography>
+                </CardContent>
+              </Card>
+            </Grid>
+          ))}
+        </Grid>
+      </Box>
+
+      {/* ╔══════════════════  MAIN CONTENT  ═════════════════════╗ */}
+      <Box sx={{ px: { xs: 2, md: 5 }, mt: 4 }}>
+        <Grid container spacing={3}>
+          {/* ┌ LEFT COLUMN ─────────────────────────────────────┐ */}
+          <Grid item xs={12} lg={7}>
+            <Stack spacing={3}>
+              {/* Quick Actions */}
+              <Box>
+                <Typography
+                  sx={{
+                    fontWeight: 800,
+                    color: "#1e293b",
+                    mb: 2,
+                    fontSize: "1.05rem",
+                  }}
+                >
+                  <BoltIcon
+                    sx={{ color: C.amber, verticalAlign: "middle", mr: 0.5 }}
+                  />
+                  Thao tác nhanh
+                </Typography>
+                <Grid container spacing={2}>
+                  {quickActions.map((a, i) => (
+                    <Grid item xs={6} sm={4} key={i}>
+                      <Card
+                        elevation={0}
+                        onClick={() => navigate(a.path)}
+                        sx={{
+                          borderRadius: "20px",
+                          border: "1px solid #e8eaf6",
+                          background: "#fff",
+                          cursor: "pointer",
+                          transition: "all 0.25s",
+                          "&:hover": {
+                            transform: "translateY(-6px)",
+                            boxShadow: `0 12px 40px ${alpha(a.color, 0.2)}`,
+                            borderColor: a.color,
+                          },
+                        }}
+                      >
+                        <CardContent
+                          sx={{
+                            p: 2.5,
+                            "&:last-child": { pb: 2.5 },
+                            textAlign: "center",
+                          }}
                         >
-                          <Chip
-                            label={topic.topic_category?.topic_category_title}
-                            size="small"
-                            sx={{ mr: 1 }}
-                          />
-                          <Typography variant="caption">
-                            {topic.topic_creator?.user_name}
+                          <Box
+                            sx={{
+                              width: 52,
+                              height: 52,
+                              borderRadius: "16px",
+                              bgcolor: alpha(a.color, 0.1),
+                              mx: "auto",
+                              mb: 1.5,
+                              display: "flex",
+                              alignItems: "center",
+                              justifyContent: "center",
+                              "& svg": { fontSize: 26, color: a.color },
+                            }}
+                          >
+                            {a.icon}
+                          </Box>
+                          <Typography
+                            sx={{
+                              fontWeight: 800,
+                              fontSize: "0.9rem",
+                              color: "#1e293b",
+                            }}
+                          >
+                            {a.label}
                           </Typography>
-                        </Box>
-                      }
-                    />
-                    <Chip
-                      label={
-                        topic.topic_teacher_status === "pending"
-                          ? "Chờ duyệt"
-                          : "Cần sửa"
-                      }
-                      color={getStatusColor(topic.topic_teacher_status)}
-                      size="small"
-                    />
-                  </ListItem>
-                ))}
-              </List>
-            ) : (
-              <Typography
-                variant="body2"
-                color="text.secondary"
-                align="center"
-                py={2}
-              >
-                Không có đề tài nào chờ duyệt
-              </Typography>
-            )}
-          </Paper>
+                        </CardContent>
+                      </Card>
+                    </Grid>
+                  ))}
+                </Grid>
+              </Box>
 
-          {/* Pending Registrations */}
-          <Paper sx={{ p: 3 }}>
-            <Box
-              display="flex"
-              justifyContent="space-between"
-              alignItems="center"
-              mb={2}
-            >
-              <Typography
-                variant="h6"
-                sx={{ display: "flex", alignItems: "center" }}
-              >
-                <GroupIcon sx={{ mr: 1 }} /> Đăng ký chờ duyệt
-              </Typography>
-              <Button
-                size="small"
-                onClick={() => navigate("/teacher/students/registrations")}
-              >
-                Xem tất cả
-              </Button>
-            </Box>
-
-            {dashboardData.pendingRegistrations.length > 0 ? (
-              <List>
-                {dashboardData.pendingRegistrations
-                  .slice(0, 3)
-                  .map((reg, index) => (
-                    <ListItem
-                      key={index}
-                      button
-                      onClick={() =>
-                        navigate(`/teacher/students/registrations`)
-                      }
+              {/* Pending Topics */}
+              <GlassCard>
+                <CardContent sx={{ p: 3.5 }}>
+                  <Stack
+                    direction="row"
+                    justifyContent="space-between"
+                    alignItems="center"
+                    sx={{ mb: 2.5 }}
+                  >
+                    <Typography
                       sx={{
-                        mb: 1,
-                        borderRadius: 1,
-                        "&:hover": { bgcolor: "action.hover" },
+                        fontWeight: 800,
+                        fontSize: "1.05rem",
+                        color: "#1e293b",
                       }}
                     >
-                      <ListItemIcon>
-                        <Avatar sx={{ width: 32, height: 32 }}>
-                          {reg.student_name?.charAt(0)}
-                        </Avatar>
-                      </ListItemIcon>
-                      <ListItemText
-                        primary={reg.student_name}
-                        secondary={
-                          <Box component="span">
-                            <Typography variant="caption" display="block">
-                              {reg.topic_title}
-                            </Typography>
-                            <Typography
-                              variant="caption"
-                              color="text.secondary"
-                            >
-                              Đăng ký:{" "}
-                              {new Date(
-                                reg.registration_date,
-                              ).toLocaleDateString("vi-VN")}
-                            </Typography>
-                          </Box>
-                        }
+                      <PendingIcon
+                        sx={{
+                          color: C.amber,
+                          verticalAlign: "middle",
+                          mr: 0.5,
+                          fontSize: 22,
+                        }}
                       />
-                      <Chip label="Chờ duyệt" color="warning" size="small" />
-                    </ListItem>
-                  ))}
-              </List>
-            ) : (
-              <Typography
-                variant="body2"
-                color="text.secondary"
-                align="center"
-                py={2}
-              >
-                Không có đăng ký nào chờ duyệt
-              </Typography>
-            )}
-          </Paper>
-        </Grid>
-
-        {/* Right Column - Upcoming & Activities */}
-        <Grid item xs={12} lg={4}>
-          {/* Upcoming Defenses */}
-          <Paper sx={{ p: 3, mb: 3 }}>
-            <Typography
-              variant="h6"
-              gutterBottom
-              sx={{ display: "flex", alignItems: "center" }}
-            >
-              <ScheduleIcon sx={{ mr: 1 }} /> Lịch bảo vệ sắp tới
-            </Typography>
-
-            {dashboardData.upcomingDefenses.length > 0 ? (
-              dashboardData.upcomingDefenses.map((defense, index) => (
-                <Box
-                  key={index}
-                  mb={2}
-                  pb={2}
-                  borderBottom={
-                    index < dashboardData.upcomingDefenses.length - 1 ? 1 : 0
-                  }
-                  borderColor="divider"
-                >
-                  <Typography variant="subtitle2" fontWeight={600}>
-                    {defense.title}
-                  </Typography>
-                  <Box display="flex" justifyContent="space-between" mt={1}>
-                    <Typography variant="caption" color="text.secondary">
-                      {new Date(defense.date).toLocaleDateString("vi-VN")}{" "}
-                      {defense.time}
+                      Đề tài chờ duyệt
                     </Typography>
-                    <Chip label={defense.room} size="small" />
-                  </Box>
-                </Box>
-              ))
-            ) : (
-              <Typography
-                variant="body2"
-                color="text.secondary"
-                align="center"
-                py={2}
-              >
-                Không có lịch bảo vệ nào
-              </Typography>
-            )}
-
-            <Button fullWidth variant="outlined" size="small" sx={{ mt: 2 }}>
-              Xem lịch đầy đủ
-            </Button>
-          </Paper>
-
-          {/* Recent Activities */}
-          <Paper sx={{ p: 3 }}>
-            <Typography
-              variant="h6"
-              gutterBottom
-              sx={{ display: "flex", alignItems: "center" }}
-            >
-              <NotificationsIcon sx={{ mr: 1 }} /> Hoạt động gần đây
-            </Typography>
-
-            {dashboardData.recentActivities.length > 0 ? (
-              <List dense>
-                {dashboardData.recentActivities.map((activity, index) => (
-                  <ListItem key={index} sx={{ px: 0 }}>
-                    <ListItemIcon sx={{ minWidth: 36 }}>
-                      {activity.type === "grade" ? (
-                        <SchoolIcon color="primary" fontSize="small" />
-                      ) : activity.type === "approval" ? (
-                        <CheckCircleIcon color="success" fontSize="small" />
-                      ) : (
-                        <AssignmentIcon color="info" fontSize="small" />
-                      )}
-                    </ListItemIcon>
-                    <ListItemText
-                      primary={
-                        <Typography variant="body2">
-                          {activity.title}
-                        </Typography>
+                    <Button
+                      size="small"
+                      endIcon={<ArrowIcon />}
+                      onClick={() =>
+                        navigate("/teacher/topics/pending-approval")
                       }
-                      secondary={
-                        <Typography variant="caption" color="text.secondary">
-                          {activity.time}
-                        </Typography>
+                      sx={{
+                        textTransform: "none",
+                        fontWeight: 700,
+                        color: C.primary,
+                      }}
+                    >
+                      Xem tất cả
+                    </Button>
+                  </Stack>
+
+                  {dashboardData.pendingTopics.length > 0 ? (
+                    <Stack spacing={1.5}>
+                      {dashboardData.pendingTopics.slice(0, 3).map((topic) => (
+                        <Box
+                          key={topic._id}
+                          onClick={() =>
+                            navigate(`/teacher/topics/${topic._id}/review`)
+                          }
+                          sx={{
+                            p: 2,
+                            borderRadius: "16px",
+                            cursor: "pointer",
+                            background:
+                              "linear-gradient(135deg,#fffbeb,#fef3c7)",
+                            border: "1px solid #fde68a",
+                            transition: "0.25s",
+                            "&:hover": {
+                              transform: "translateX(6px)",
+                              boxShadow: `0 4px 20px ${alpha(C.amber, 0.2)}`,
+                            },
+                          }}
+                        >
+                          <Stack
+                            direction="row"
+                            alignItems="center"
+                            spacing={2}
+                          >
+                            <Box
+                              sx={{
+                                width: 40,
+                                height: 40,
+                                borderRadius: "12px",
+                                bgcolor: "#fef3c7",
+                                display: "flex",
+                                alignItems: "center",
+                                justifyContent: "center",
+                                flexShrink: 0,
+                              }}
+                            >
+                              <AssignmentIcon
+                                sx={{ color: C.amber, fontSize: 20 }}
+                              />
+                            </Box>
+                            <Box sx={{ flex: 1, minWidth: 0 }}>
+                              <Typography
+                                variant="body2"
+                                sx={{
+                                  fontWeight: 800,
+                                  color: "#1e293b",
+                                  noWrap: true,
+                                }}
+                              >
+                                {topic.topic_title}
+                              </Typography>
+                              <Typography
+                                variant="caption"
+                                sx={{ color: "#92400e" }}
+                              >
+                                {topic.topic_creator?.user_name} ·{" "}
+                                {topic.topic_category?.topic_category_title}
+                              </Typography>
+                            </Box>
+                            <Chip
+                              label="Chờ duyệt"
+                              size="small"
+                              sx={{
+                                bgcolor: "#fde68a",
+                                color: "#92400e",
+                                fontWeight: 700,
+                                borderRadius: "8px",
+                              }}
+                            />
+                          </Stack>
+                        </Box>
+                      ))}
+                    </Stack>
+                  ) : (
+                    <Box sx={{ textAlign: "center", py: 4 }}>
+                      <CheckCircleIcon
+                        sx={{ fontSize: 40, color: "#d1fae5", mb: 1 }}
+                      />
+                      <Typography
+                        variant="body2"
+                        sx={{ color: "#94a3b8", fontWeight: 600 }}
+                      >
+                        Không có đề tài nào chờ duyệt 🎉
+                      </Typography>
+                    </Box>
+                  )}
+                </CardContent>
+              </GlassCard>
+
+              {/* Pending Registrations */}
+              <GlassCard>
+                <CardContent sx={{ p: 3.5 }}>
+                  <Stack
+                    direction="row"
+                    justifyContent="space-between"
+                    alignItems="center"
+                    sx={{ mb: 2.5 }}
+                  >
+                    <Typography
+                      sx={{
+                        fontWeight: 800,
+                        fontSize: "1.05rem",
+                        color: "#1e293b",
+                      }}
+                    >
+                      <GroupIcon
+                        sx={{
+                          color: C.violet,
+                          verticalAlign: "middle",
+                          mr: 0.5,
+                          fontSize: 22,
+                        }}
+                      />
+                      Đăng ký chờ duyệt
+                    </Typography>
+                    <Button
+                      size="small"
+                      endIcon={<ArrowIcon />}
+                      onClick={() =>
+                        navigate("/teacher/students/registrations")
                       }
+                      sx={{
+                        textTransform: "none",
+                        fontWeight: 700,
+                        color: C.primary,
+                      }}
+                    >
+                      Xem tất cả
+                    </Button>
+                  </Stack>
+
+                  {dashboardData.pendingRegistrations.length > 0 ? (
+                    <Stack spacing={1.5}>
+                      {dashboardData.pendingRegistrations
+                        .slice(0, 3)
+                        .map((reg, idx) => (
+                          <Box
+                            key={idx}
+                            onClick={() =>
+                              navigate("/teacher/students/registrations")
+                            }
+                            sx={{
+                              p: 2,
+                              borderRadius: "16px",
+                              cursor: "pointer",
+                              background:
+                                "linear-gradient(135deg,#f5f3ff,#ede9fe)",
+                              border: "1px solid #ddd6fe",
+                              transition: "0.25s",
+                              "&:hover": {
+                                transform: "translateX(6px)",
+                                boxShadow: `0 4px 20px ${alpha(C.violet, 0.2)}`,
+                              },
+                            }}
+                          >
+                            <Stack
+                              direction="row"
+                              alignItems="center"
+                              spacing={2}
+                            >
+                              <Avatar
+                                sx={{
+                                  width: 40,
+                                  height: 40,
+                                  bgcolor: alpha(C.violet, 0.15),
+                                  color: C.violet,
+                                  fontWeight: 800,
+                                }}
+                              >
+                                {reg.student_name?.charAt(0)}
+                              </Avatar>
+                              <Box sx={{ flex: 1, minWidth: 0 }}>
+                                <Typography
+                                  variant="body2"
+                                  sx={{ fontWeight: 800, color: "#1e293b" }}
+                                >
+                                  {reg.student_name}
+                                </Typography>
+                                <Typography
+                                  variant="caption"
+                                  sx={{ color: "#7c3aed" }}
+                                >
+                                  {reg.topic_title}
+                                </Typography>
+                              </Box>
+                              <Chip
+                                label="Chờ duyệt"
+                                size="small"
+                                sx={{
+                                  bgcolor: "#ddd6fe",
+                                  color: "#6d28d9",
+                                  fontWeight: 700,
+                                  borderRadius: "8px",
+                                }}
+                              />
+                            </Stack>
+                          </Box>
+                        ))}
+                    </Stack>
+                  ) : (
+                    <Box sx={{ textAlign: "center", py: 4 }}>
+                      <GroupIcon
+                        sx={{ fontSize: 40, color: "#e9d5ff", mb: 1 }}
+                      />
+                      <Typography
+                        variant="body2"
+                        sx={{ color: "#94a3b8", fontWeight: 600 }}
+                      >
+                        Không có đăng ký nào chờ duyệt
+                      </Typography>
+                    </Box>
+                  )}
+                </CardContent>
+              </GlassCard>
+            </Stack>
+          </Grid>
+
+          {/* ┌ RIGHT SIDEBAR ───────────────────────────────────┐ */}
+          <Grid item xs={12} lg={5}>
+            <Stack spacing={3}>
+              {/* Profile Info */}
+              <GlassCard>
+                <CardContent sx={{ p: 3 }}>
+                  <Stack
+                    direction="row"
+                    spacing={2}
+                    alignItems="center"
+                    sx={{ mb: 2.5 }}
+                  >
+                    <Avatar
+                      src={user?.user_avatar}
+                      sx={{
+                        width: 56,
+                        height: 56,
+                        background: `linear-gradient(135deg,${C.primary},${C.teal})`,
+                        fontWeight: 900,
+                        fontSize: "1.4rem",
+                        color: "#fff",
+                      }}
+                    >
+                      {user?.user_name?.charAt(0)}
+                    </Avatar>
+                    <Box>
+                      <Typography sx={{ fontWeight: 800, color: "#0f172a" }}>
+                        {user?.user_name}
+                      </Typography>
+                      <Typography
+                        variant="caption"
+                        sx={{ color: "#64748b", fontWeight: 600 }}
+                      >
+                        Giảng viên hướng dẫn
+                      </Typography>
+                    </Box>
+                  </Stack>
+
+                  {/* Stats inline */}
+                  <Grid container spacing={1.5}>
+                    {[
+                      {
+                        label: "Đang HD",
+                        value: dashboardData.stats.my_guided || 0,
+                        color: C.primary,
+                      },
+                      {
+                        label: "Hoàn thành",
+                        value: dashboardData.stats.completed || 0,
+                        color: C.emerald,
+                      },
+                      {
+                        label: "Tỷ lệ HT",
+                        value: `${completionRate}%`,
+                        color: C.amber,
+                      },
+                    ].map((s, i) => (
+                      <Grid item xs={4} key={i}>
+                        <Box
+                          sx={{
+                            textAlign: "center",
+                            p: 1.5,
+                            borderRadius: "14px",
+                            bgcolor: alpha(s.color, 0.08),
+                            border: `1px solid ${alpha(s.color, 0.15)}`,
+                          }}
+                        >
+                          <Typography
+                            sx={{
+                              fontSize: "1.3rem",
+                              fontWeight: 900,
+                              color: s.color,
+                              lineHeight: 1,
+                            }}
+                          >
+                            {s.value}
+                          </Typography>
+                          <Typography
+                            variant="caption"
+                            sx={{ color: "#64748b", fontWeight: 600 }}
+                          >
+                            {s.label}
+                          </Typography>
+                        </Box>
+                      </Grid>
+                    ))}
+                  </Grid>
+
+                  {/* Completion bar */}
+                  <Box sx={{ mt: 2.5 }}>
+                    <Stack
+                      direction="row"
+                      justifyContent="space-between"
+                      sx={{ mb: 0.8 }}
+                    >
+                      <Typography
+                        variant="caption"
+                        sx={{ fontWeight: 700, color: "#64748b" }}
+                      >
+                        Tỷ lệ hoàn thành
+                      </Typography>
+                      <Typography
+                        variant="caption"
+                        sx={{ fontWeight: 900, color: C.primary }}
+                      >
+                        {completionRate}%
+                      </Typography>
+                    </Stack>
+                    <LinearProgress
+                      variant="determinate"
+                      value={completionRate}
+                      sx={{
+                        height: 8,
+                        borderRadius: 4,
+                        bgcolor: "#e0f2fe",
+                        "& .MuiLinearProgress-bar": {
+                          borderRadius: 4,
+                          bgcolor: C.primary,
+                        },
+                      }}
                     />
-                  </ListItem>
-                ))}
-              </List>
-            ) : (
-              <Typography
-                variant="body2"
-                color="text.secondary"
-                align="center"
-                py={2}
-              >
-                Chưa có hoạt động nào
-              </Typography>
-            )}
-          </Paper>
+                  </Box>
+                </CardContent>
+              </GlassCard>
 
-          {/* Teaching Stats */}
-          <Paper sx={{ p: 3, mt: 3 }}>
-            <Typography variant="h6" gutterBottom>
-              📊 Thống kê hướng dẫn
-            </Typography>
-            <Box>
-              <Box display="flex" justifyContent="space-between" mb={1}>
-                <Typography variant="body2">Đề tài đang hướng dẫn:</Typography>
-                <Typography variant="body2" fontWeight={600}>
-                  {dashboardData.stats.my_guided || 0}
-                </Typography>
-              </Box>
-              <Box display="flex" justifyContent="space-between" mb={1}>
-                <Typography variant="body2">
-                  Sinh viên đang hướng dẫn:
-                </Typography>
-                <Typography variant="body2" fontWeight={600}>
-                  {dashboardData.pendingRegistrations.length +
-                    (dashboardData.stats.my_guided || 0) * 2}
-                </Typography>
-              </Box>
-              <Box display="flex" justifyContent="space-between" mb={1}>
-                <Typography variant="body2">Đề tài đã hoàn thành:</Typography>
-                <Typography variant="body2" fontWeight={600}>
-                  {dashboardData.stats.completed || 0}
-                </Typography>
-              </Box>
-              <Box display="flex" justifyContent="space-between">
-                <Typography variant="body2">Tỷ lệ hoàn thành:</Typography>
-                <Typography variant="body2" fontWeight={600}>
-                  {dashboardData.stats.total > 0
-                    ? `${Math.round((dashboardData.stats.completed / dashboardData.stats.total) * 100)}%`
-                    : "0%"}
-                </Typography>
-              </Box>
-            </Box>
-          </Paper>
+              {/* Upcoming Defenses */}
+              <GlassCard>
+                <CardContent sx={{ p: 3 }}>
+                  <Stack
+                    direction="row"
+                    justifyContent="space-between"
+                    alignItems="center"
+                    sx={{ mb: 2.5 }}
+                  >
+                    <Typography
+                      sx={{
+                        fontWeight: 800,
+                        fontSize: "1rem",
+                        color: "#1e293b",
+                      }}
+                    >
+                      <ScheduleIcon
+                        sx={{
+                          verticalAlign: "middle",
+                          mr: 0.5,
+                          color: C.teal,
+                          fontSize: 21,
+                        }}
+                      />
+                      Lịch bảo vệ sắp tới
+                    </Typography>
+                    <Chip
+                      label={`${dashboardData.upcomingDefenses.length} lịch`}
+                      size="small"
+                      sx={{
+                        bgcolor: "#ccfbf1",
+                        color: "#0f766e",
+                        fontWeight: 700,
+                        borderRadius: "8px",
+                      }}
+                    />
+                  </Stack>
+
+                  {dashboardData.upcomingDefenses.length > 0 ? (
+                    <Stack spacing={1.5}>
+                      {dashboardData.upcomingDefenses.map((d, i) => (
+                        <Box
+                          key={i}
+                          sx={{
+                            p: 2,
+                            borderRadius: "16px",
+                            background:
+                              "linear-gradient(135deg,#f0fdf4,#dcfce7)",
+                            border: "1px solid #bbf7d0",
+                          }}
+                        >
+                          <Typography
+                            variant="body2"
+                            sx={{ fontWeight: 800, color: "#1e293b", mb: 1 }}
+                          >
+                            {d.title}
+                          </Typography>
+                          <Stack direction="row" spacing={2}>
+                            <Stack
+                              direction="row"
+                              spacing={0.5}
+                              alignItems="center"
+                            >
+                              <TimeIcon sx={{ fontSize: 14, color: C.slate }} />
+                              <Typography
+                                variant="caption"
+                                sx={{ color: C.slate, fontWeight: 600 }}
+                              >
+                                {new Date(d.date).toLocaleDateString("vi-VN")},{" "}
+                                {d.time}
+                              </Typography>
+                            </Stack>
+                            <Stack
+                              direction="row"
+                              spacing={0.5}
+                              alignItems="center"
+                            >
+                              <RoomIcon sx={{ fontSize: 14, color: C.slate }} />
+                              <Typography
+                                variant="caption"
+                                sx={{ color: C.slate, fontWeight: 600 }}
+                              >
+                                Phòng {d.room}
+                              </Typography>
+                            </Stack>
+                          </Stack>
+                        </Box>
+                      ))}
+                    </Stack>
+                  ) : (
+                    <Box sx={{ textAlign: "center", py: 3 }}>
+                      <Typography
+                        sx={{
+                          color: "#94a3b8",
+                          fontWeight: 600,
+                          fontSize: "0.9rem",
+                        }}
+                      >
+                        Chưa có lịch bảo vệ nào
+                      </Typography>
+                    </Box>
+                  )}
+
+                  <Button
+                    fullWidth
+                    variant="text"
+                    sx={{
+                      mt: 2,
+                      fontWeight: 700,
+                      borderRadius: "12px",
+                      textTransform: "none",
+                      color: C.teal,
+                    }}
+                  >
+                    Xem lịch đầy đủ
+                  </Button>
+                </CardContent>
+              </GlassCard>
+
+              {/* Recent Activities */}
+              <GlassCard>
+                <CardContent sx={{ p: 3 }}>
+                  <Typography
+                    sx={{
+                      fontWeight: 800,
+                      fontSize: "1rem",
+                      color: "#1e293b",
+                      mb: 2.5,
+                    }}
+                  >
+                    <NotificationsIcon
+                      sx={{
+                        verticalAlign: "middle",
+                        mr: 0.5,
+                        color: C.rose,
+                        fontSize: 21,
+                      }}
+                    />
+                    Hoạt động gần đây
+                  </Typography>
+
+                  {dashboardData.recentActivities.length > 0 ? (
+                    <Stack spacing={0}>
+                      {dashboardData.recentActivities.map((a, i) => (
+                        <React.Fragment key={i}>
+                          <Stack
+                            direction="row"
+                            spacing={2}
+                            alignItems="flex-start"
+                            sx={{ py: 1.5 }}
+                          >
+                            <Box
+                              sx={{
+                                width: 36,
+                                height: 36,
+                                borderRadius: "10px",
+                                bgcolor:
+                                  a.type === "grade"
+                                    ? "#e0f2fe"
+                                    : a.type === "approval"
+                                      ? "#d1fae5"
+                                      : "#f5f3ff",
+                                display: "flex",
+                                alignItems: "center",
+                                justifyContent: "center",
+                                flexShrink: 0,
+                              }}
+                            >
+                              {activityIcon(a.type)}
+                            </Box>
+                            <Box>
+                              <Typography
+                                variant="body2"
+                                sx={{ fontWeight: 700, color: "#334155" }}
+                              >
+                                {a.label}
+                              </Typography>
+                              <Typography
+                                variant="caption"
+                                sx={{ color: "#94a3b8", fontWeight: 600 }}
+                              >
+                                {a.time}
+                              </Typography>
+                            </Box>
+                          </Stack>
+                          {i < dashboardData.recentActivities.length - 1 && (
+                            <Divider sx={{ borderColor: "#f1f5f9" }} />
+                          )}
+                        </React.Fragment>
+                      ))}
+                    </Stack>
+                  ) : (
+                    <Box sx={{ textAlign: "center", py: 3 }}>
+                      <Typography
+                        sx={{
+                          color: "#94a3b8",
+                          fontWeight: 600,
+                          fontSize: "0.9rem",
+                        }}
+                      >
+                        Chưa có hoạt động nào gần đây
+                      </Typography>
+                    </Box>
+                  )}
+                </CardContent>
+              </GlassCard>
+            </Stack>
+          </Grid>
         </Grid>
-      </Grid>
-    </Container>
+      </Box>
+    </Box>
   );
 };
 

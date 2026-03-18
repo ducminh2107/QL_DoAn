@@ -22,11 +22,14 @@ import {
   DialogActions,
   Alert,
   AlertTitle,
+  TextField,
+  Divider,
 } from "@mui/material";
 import {
   Visibility as ViewIcon,
   TrendingUp as TrendingUpIcon,
   Warning as WarningIcon,
+  Send as SendIcon,
 } from "@mui/icons-material";
 import axios from "axios";
 import toast from "react-hot-toast";
@@ -36,6 +39,8 @@ const ProgressMonitoring = () => {
   const [loading, setLoading] = useState(true);
   const [selectedStudent, setSelectedStudent] = useState(null);
   const [openDialog, setOpenDialog] = useState(false);
+  const [feedback, setFeedback] = useState("");
+  const [sendingFeedback, setSendingFeedback] = useState(false);
 
   useEffect(() => {
     fetchStudentsProgress();
@@ -65,6 +70,30 @@ const ProgressMonitoring = () => {
   const handleCloseDialog = () => {
     setOpenDialog(false);
     setSelectedStudent(null);
+    setFeedback("");
+  };
+
+  const handleSendFeedback = async () => {
+    if (!feedback.trim()) {
+      toast.error("Vui lòng nhập nội dung phản hồi");
+      return;
+    }
+    try {
+      setSendingFeedback(true);
+      await axios.post(
+        `/api/teacher/students-progress/${selectedStudent.student_id}/feedback`,
+        {
+          feedback,
+          topic_id: selectedStudent.topic_id,
+        },
+      );
+      toast.success("Đã gửi phản hồi đến sinh viên");
+      setFeedback("");
+    } catch (error) {
+      toast.error(error.response?.data?.message || "Lỗi khi gửi phản hồi");
+    } finally {
+      setSendingFeedback(false);
+    }
   };
 
   const getProgressColor = (progress) => {
@@ -81,9 +110,9 @@ const ProgressMonitoring = () => {
 
   const getRiskLabel = (level) => {
     const labels = {
-      low: "Thấp",
-      medium: "Trung Bình",
-      high: "Cao",
+      low: "Tốt",
+      medium: "Ổn định",
+      high: "Chậm trễ",
     };
     return labels[level] || level;
   };
@@ -99,13 +128,30 @@ const ProgressMonitoring = () => {
 
   return (
     <Container maxWidth="lg" sx={{ py: 4 }}>
-      <Box sx={{ mb: 4 }}>
-        <Typography variant="h4" component="h1" sx={{ mb: 1, fontWeight: 600 }}>
-          Theo Dõi Tiến Độ Sinh Viên
-        </Typography>
-        <Typography variant="body2" color="textSecondary">
-          Giám sát tiến độ thực hiện đề tài của các sinh viên được hướng dẫn
-        </Typography>
+      <Box
+        sx={{
+          mb: 4,
+          display: "flex",
+          justifyContent: "space-between",
+          alignItems: "center",
+          p: 4,
+          background: "linear-gradient(135deg, #7c3aed 0%, #db2777 100%)",
+          borderRadius: "16px",
+          boxShadow: "0 10px 30px rgba(219, 39, 119, 0.2)",
+          color: "white",
+        }}
+      >
+        <Box>
+          <Typography
+            variant="h4"
+            sx={{ fontWeight: 800, letterSpacing: "-0.5px" }}
+          >
+            Theo Dõi Tiến Độ Sinh Viên
+          </Typography>
+          <Typography variant="body1" sx={{ mt: 1, opacity: 0.9 }}>
+            Giám sát tiến độ thực hiện đề tài của các sinh viên được hướng dẫn
+          </Typography>
+        </Box>
       </Box>
 
       {loading ? (
@@ -202,7 +248,7 @@ const ProgressMonitoring = () => {
                       <TableCell sx={{ fontWeight: 600 }}>Sinh Viên</TableCell>
                       <TableCell sx={{ fontWeight: 600 }}>Đề Tài</TableCell>
                       <TableCell sx={{ fontWeight: 600 }}>Tiến Độ</TableCell>
-                      <TableCell sx={{ fontWeight: 600 }}>Rủi Ro</TableCell>
+                      <TableCell sx={{ fontWeight: 600 }}>Tình Trạng</TableCell>
                       <TableCell sx={{ fontWeight: 600 }} align="right">
                         Hành Động
                       </TableCell>
@@ -220,7 +266,7 @@ const ProgressMonitoring = () => {
                               {student.student_name}
                             </Typography>
                             <Typography variant="caption" color="textSecondary">
-                              {student.student_id}
+                              {student.student_code || student.student_id}
                             </Typography>
                           </Box>
                         </TableCell>
@@ -249,7 +295,7 @@ const ProgressMonitoring = () => {
                                   variant="body2"
                                   sx={{ fontWeight: 500 }}
                                 >
-                                  {student.progress}%
+                                  {Math.round(student.progress)}%
                                 </Typography>
                               </Box>
                               <Box
@@ -321,9 +367,9 @@ const ProgressMonitoring = () => {
             <Box sx={{ display: "flex", flexDirection: "column", gap: 2 }}>
               {getRiskLevel(selectedStudent) === "high" && (
                 <Alert severity="error">
-                  <AlertTitle>Cảnh Báo: Tiến Độ Thấp</AlertTitle>
-                  Sinh viên này có tiến độ dưới 50%, cần được hỗ trợ để hoàn
-                  thành đề tài
+                  <AlertTitle>Cảnh Báo: Tiến Độ Chậm Trễ</AlertTitle>
+                  Sinh viên này có tiến độ dưới 50%, cần được nhắc nhở và đôn
+                  đốc thực hiện đề tài.
                 </Alert>
               )}
 
@@ -332,7 +378,8 @@ const ProgressMonitoring = () => {
                   Sinh Viên
                 </Typography>
                 <Typography variant="body2">
-                  {selectedStudent.student_name} ({selectedStudent.student_id})
+                  {selectedStudent.student_name} (
+                  {selectedStudent.student_code || selectedStudent.student_id})
                 </Typography>
               </Box>
 
@@ -362,7 +409,7 @@ const ProgressMonitoring = () => {
                     variant="body2"
                     sx={{ fontWeight: 600, minWidth: 45 }}
                   >
-                    {selectedStudent.progress}%
+                    {Math.round(selectedStudent.progress)}%
                   </Typography>
                 </Box>
               </Box>
@@ -405,6 +452,40 @@ const ProgressMonitoring = () => {
                   </Paper>
                 </Box>
               )}
+            </Box>
+          )}
+
+          {selectedStudent && (
+            <Box sx={{ mt: 3 }}>
+              <Divider sx={{ mb: 2 }} />
+              <Typography variant="subtitle2" sx={{ fontWeight: 600, mb: 1 }}>
+                Gửi Phản Hồi / Nhắc Nhở
+              </Typography>
+              <TextField
+                fullWidth
+                multiline
+                rows={3}
+                placeholder="Nhập nội dung phản hồi về tiến độ..."
+                variant="outlined"
+                value={feedback}
+                onChange={(e) => setFeedback(e.target.value)}
+                sx={{ mb: 2 }}
+              />
+              <Box sx={{ display: "flex", justifyContent: "flex-end" }}>
+                <Button
+                  variant="contained"
+                  endIcon={<SendIcon />}
+                  onClick={handleSendFeedback}
+                  disabled={sendingFeedback}
+                  sx={{
+                    bgcolor: "#7c3aed",
+                    "&:hover": { bgcolor: "#6d28d9" },
+                    borderRadius: "8px",
+                  }}
+                >
+                  Gửi Phản Hồi
+                </Button>
+              </Box>
             </Box>
           )}
         </DialogContent>

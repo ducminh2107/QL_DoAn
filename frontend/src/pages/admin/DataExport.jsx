@@ -17,11 +17,13 @@ import {
   Alert,
   LinearProgress,
 } from "@mui/material";
-import { GetApp as DownloadIcon, Info as InfoIcon } from "@mui/icons-material";
+import { GetApp as DownloadIcon, Info as InfoIcon, OpenInNew as OpenInNewIcon } from "@mui/icons-material";
+import { useNavigate } from "react-router-dom";
 import axios from "axios";
 import toast from "react-hot-toast";
 
 const DataExport = () => {
+  const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
   const [exportFormat, setExportFormat] = useState("csv");
   const [selectedData, setSelectedData] = useState({
@@ -46,13 +48,23 @@ const DataExport = () => {
   };
 
   const handleExport = async () => {
+    // Convert object {users: true, topics: true} → array ["users", "topics"]
+    const dataTypesArray = Object.keys(selectedData).filter(
+      (key) => selectedData[key]
+    );
+
+    if (dataTypesArray.length === 0) {
+      toast.error("Vui lòng chọn ít nhất một loại dữ liệu");
+      return;
+    }
+
     try {
       setLoading(true);
       const response = await axios.post(
         "/api/admin/export/data",
         {
           format: exportFormat,
-          data: selectedData,
+          data: dataTypesArray,
           dateRange,
         },
         {
@@ -70,7 +82,7 @@ const DataExport = () => {
       link.parentElement.removeChild(link);
 
       toast.success("Xuất dữ liệu thành công");
-    } catch (error) {
+    } catch {
       toast.error("Lỗi xuất dữ liệu");
     } finally {
       setLoading(false);
@@ -79,6 +91,27 @@ const DataExport = () => {
 
   return (
     <Container maxWidth="lg" sx={{ py: 4 }}>
+      {/* Deprecation notice */}
+      <Alert
+        severity="warning"
+        sx={{ mb: 3 }}
+        action={
+          <Button
+            color="inherit"
+            size="small"
+            endIcon={<OpenInNewIcon />}
+            onClick={() => navigate("/admin/import-export")}
+            sx={{ fontWeight: 700, whiteSpace: "nowrap" }}
+          >
+            Dùng trang mới
+          </Button>
+        }
+      >
+        <strong>Lưu ý:</strong> Trang này đã được thay thế bởi trang{" "}
+        <strong>Nhập / Xuất Dữ Liệu</strong> với nhiều tính năng hơn.
+        Vui lòng sử dụng trang mới.
+      </Alert>
+
       <Box sx={{ mb: 4 }}>
         <Typography variant="h4" component="h1" sx={{ fontWeight: 600 }}>
           Xuất Dữ Liệu

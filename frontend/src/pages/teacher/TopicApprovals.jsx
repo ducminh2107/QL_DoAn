@@ -124,15 +124,39 @@ const TopicApprovals = () => {
     <Container maxWidth="lg" sx={{ mt: 3, mb: 4 }}>
       {/* Header */}
       <Box
-        display="flex"
-        justifyContent="space-between"
-        alignItems="center"
-        mb={3}
+        sx={{
+          mb: 4,
+          display: "flex",
+          justifyContent: "space-between",
+          alignItems: "center",
+          p: 4,
+          background: "linear-gradient(135deg, #1d4ed8 0%, #3b82f6 100%)",
+          borderRadius: "16px",
+          boxShadow: "0 10px 30px rgba(59, 130, 246, 0.2)",
+          color: "white",
+        }}
       >
-        <Typography variant="h4" sx={{ fontWeight: 600 }}>
-          ⏳ Duyệt đề tài sinh viên
-        </Typography>
-        <Typography variant="body1" color="text.secondary">
+        <Box>
+          <Typography
+            variant="h4"
+            sx={{ fontWeight: 800, letterSpacing: "-0.5px" }}
+          >
+            Duyệt Đề Tài Sinh Viên
+          </Typography>
+          <Typography variant="body1" sx={{ mt: 1, opacity: 0.9 }}>
+            Xét duyệt các đề tài do sinh viên tự đề xuất
+          </Typography>
+        </Box>
+        <Typography
+          variant="body2"
+          sx={{
+            bgcolor: "rgba(255,255,255,0.2)",
+            px: 2,
+            py: 1,
+            borderRadius: "8px",
+            fontWeight: 600,
+          }}
+        >
           {topics.length} đề tài chờ xử lý
         </Typography>
       </Box>

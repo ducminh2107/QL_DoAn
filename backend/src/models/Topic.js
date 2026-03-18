@@ -3,9 +3,6 @@ const mongoose = require('mongoose');
 const topicSchema = new mongoose.Schema(
   {
     topic_registration_period: {
-      type: String,
-    },
-    topic_registration_period_ref: {
       type: mongoose.Schema.Types.ObjectId,
       ref: 'RegistrationPeriod',
     },
@@ -37,9 +34,6 @@ const topicSchema = new mongoose.Schema(
       ref: 'User',
       required: [true, 'Nguoi tao de tai la bat buoc'],
     },
-    topic_creator_id: {
-      type: String,
-    },
     topic_max_members: {
       type: Number,
       default: 1,
@@ -52,8 +46,11 @@ const topicSchema = new mongoose.Schema(
           type: mongoose.Schema.Types.ObjectId,
           ref: 'User',
         },
-        student_id: String,
-        student_name: String,
+        role: {
+          type: String,
+          enum: ['leader', 'member'],
+          default: 'member',
+        },
         status: {
           type: String,
           enum: ['pending', 'approved', 'rejected'],
@@ -70,15 +67,9 @@ const topicSchema = new mongoose.Schema(
       type: mongoose.Schema.Types.ObjectId,
       ref: 'User',
     },
-    topic_instructor_id: {
-      type: String,
-    },
     topic_reviewer: {
       type: mongoose.Schema.Types.ObjectId,
       ref: 'User',
-    },
-    topic_reviewer_id: {
-      type: String,
     },
 
     topic_teacher_status: {
@@ -88,9 +79,10 @@ const topicSchema = new mongoose.Schema(
     },
     topic_leader_status: {
       type: String,
-      enum: ['pending', 'approved'],
+      enum: ['pending', 'approved', 'rejected'],
       default: 'pending',
     },
+    leader_feedback: String,
 
     topic_advisor_request: String,
     topic_final_report: String,
@@ -101,49 +93,7 @@ const topicSchema = new mongoose.Schema(
       default: false,
     },
 
-    rubric_instructor: {
-      rubric_id: {
-        type: mongoose.Schema.Types.ObjectId,
-        ref: 'Rubric',
-      },
-      evaluations: [
-        {
-          criteria: String,
-          score: Number,
-          comment: String,
-        },
-      ],
-      total_score: Number,
-    },
-    rubric_reviewer: {
-      rubric_id: {
-        type: mongoose.Schema.Types.ObjectId,
-        ref: 'Rubric',
-      },
-      evaluations: [
-        {
-          criteria: String,
-          score: Number,
-          comment: String,
-        },
-      ],
-      total_score: Number,
-    },
-    rubric_assembly: {
-      rubric_id: {
-        type: mongoose.Schema.Types.ObjectId,
-        ref: 'Rubric',
-      },
-      evaluations: [
-        {
-          criteria: String,
-          score: Number,
-          comment: String,
-        },
-      ],
-      total_score: Number,
-    },
-
+    // rubrics removed. Chấm điểm được tách bạch qua collection scoreboards.
     topic_assembly: {
       type: mongoose.Schema.Types.ObjectId,
       ref: 'Assembly',

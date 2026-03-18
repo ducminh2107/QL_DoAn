@@ -19,6 +19,7 @@ import {
   DialogTitle,
   DialogContent,
   DialogActions,
+  LinearProgress,
 } from "@mui/material";
 import {
   Search as SearchIcon,
@@ -29,6 +30,8 @@ import {
   Edit as EditIcon,
   Delete as DeleteIcon,
   Visibility as VisibilityIcon,
+  MenuBook as MenuBookIcon,
+  Analytics as AnalyticsIcon,
 } from "@mui/icons-material";
 import axios from "axios";
 import toast from "react-hot-toast";
@@ -64,7 +67,7 @@ const GuidedStudents = () => {
     (student) =>
       student.user_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
       student.email?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      student.user_id?.toLowerCase().includes(searchTerm.toLowerCase())
+      student.user_id?.toLowerCase().includes(searchTerm.toLowerCase()),
   );
 
   const handleViewDetails = (student) => {
@@ -168,6 +171,50 @@ const GuidedStudents = () => {
                     <Typography variant="caption" color="text.secondary">
                       {student.user_id || "N/A"}
                     </Typography>
+                  </Box>
+                </Box>
+
+                <Box
+                  sx={{
+                    mt: 2,
+                    bgcolor: "#f8fafc",
+                    p: 1.5,
+                    borderRadius: "10px",
+                  }}
+                >
+                  <Box display="flex" gap={1} mb={1}>
+                    <MenuBookIcon fontSize="small" color="primary" />
+                    <Typography
+                      variant="body2"
+                      sx={{ fontWeight: 600, color: "#1e293b" }}
+                    >
+                      {student.topic_title || "Chưa có đề tài"}
+                    </Typography>
+                  </Box>
+                  <Box mt={1.5}>
+                    <Box display="flex" justifyContent="space-between" mb={0.5}>
+                      <Typography
+                        variant="caption"
+                        color="text.secondary"
+                        display="flex"
+                        alignItems="center"
+                        gap={0.5}
+                      >
+                        <AnalyticsIcon fontSize="inherit" /> Tiến độ
+                      </Typography>
+                      <Typography
+                        variant="caption"
+                        fontWeight="bold"
+                        color="primary"
+                      >
+                        {student.progress || 0}%
+                      </Typography>
+                    </Box>
+                    <LinearProgress
+                      variant="determinate"
+                      value={student.progress || 0}
+                      sx={{ height: 6, borderRadius: 3 }}
+                    />
                   </Box>
                 </Box>
 
@@ -317,6 +364,45 @@ const GuidedStudents = () => {
                   </Typography>
                 </Box>
               )}
+
+              <Divider sx={{ my: 2 }} />
+
+              <Box sx={{ mb: 2 }}>
+                <Typography
+                  variant="subtitle2"
+                  color="text.secondary"
+                  sx={{ display: "flex", alignItems: "center", gap: 0.5 }}
+                >
+                  <MenuBookIcon fontSize="small" /> Đề Tài Đang Thực Hiện
+                </Typography>
+                <Typography variant="body2" sx={{ fontWeight: 600, mt: 0.5 }}>
+                  {selectedStudent.topic_title}
+                </Typography>
+              </Box>
+
+              <Box sx={{ mb: 3 }}>
+                <Box display="flex" justifyContent="space-between" mb={0.5}>
+                  <Typography
+                    variant="subtitle2"
+                    color="text.secondary"
+                    sx={{ display: "flex", alignItems: "center", gap: 0.5 }}
+                  >
+                    <AnalyticsIcon fontSize="small" /> Tiến Độ
+                  </Typography>
+                  <Typography
+                    variant="subtitle2"
+                    fontWeight="bold"
+                    color="primary"
+                  >
+                    {selectedStudent.progress || 0}%
+                  </Typography>
+                </Box>
+                <LinearProgress
+                  variant="determinate"
+                  value={selectedStudent.progress || 0}
+                  sx={{ height: 8, borderRadius: 4 }}
+                />
+              </Box>
 
               <Box sx={{ mb: 2 }}>
                 <Typography variant="subtitle2" color="text.secondary">

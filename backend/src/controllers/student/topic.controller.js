@@ -34,15 +34,8 @@ const getAvailableTopics = async (req, res, next) => {
       topic_leader_status: 'approved',
     };
 
-    // Filter by major
-    // Chỉ áp dụng nếu user_major là ObjectId hợp lệ,
-    // tránh lỗi CastError khi user_major đang lưu dạng string (ví dụ “Kỹ thuật phần mềm”)
-    if (
-      student.user_major &&
-      mongoose.Types.ObjectId.isValid(student.user_major)
-    ) {
-      query.topic_major = student.user_major;
-    }
+    // Sinh viên có thể xem toàn bộ các đề tài của bất kỳ chuyên ngành nào
+    // để có khả năng đăng ký/hợp tác chéo nếu được giảng viên cho phép.
 
     // Search filter
     if (req.query.search) {
@@ -70,16 +63,38 @@ const getAvailableTopics = async (req, res, next) => {
     });
 
     if (activePeriod) {
-      query.$or = [
-        {
-          topic_registration_period: activePeriod.registration_period_semester,
+      query.$and = query.$and || [];
+      query.$and.push({
+        $or: [
+          { topic_registration_period: activePeriod._id },
+          { is_system_topic: true }
+        ]
+      });
+    } else {
+      // If there is no active period, return empty proactively
+      return res.status(200).json({
+        success: true,
+        count: 0,
+        pagination: { page: 1, totalPages: 1, total: 0 },
+        data: [],
+        message: 'Hiện không có đợt đăng ký nào đang diễn ra',
+        filters: {
+          search: req.query.search || '',
+          category: req.query.category || '',
+          instructor: req.query.instructor || '',
         },
-        { topic_registration_period_ref: activePeriod._id },
-      ];
+      });
     }
 
+    // Only allow viewing topics created by teachers, admins, or the student themselves
+    const nonStudentUsers = await User.find({ role: { $in: ['teacher', 'admin'] } }).select('_id');
+    const allowedCreatorIds = nonStudentUsers.map((u) => u._id);
+    allowedCreatorIds.push(req.user.id); // Add current student
+
+    query.topic_creator = { $in: allowedCreatorIds };
+
     // Execute query with population
-    const [topics, total] = await Promise.all([
+    const [topics, total, hasApprovedTopic] = await Promise.all([
       Topic.find(query)
         .populate('topic_category', 'topic_category_title')
         .populate('topic_major', 'major_title')
@@ -90,6 +105,14 @@ const getAvailableTopics = async (req, res, next) => {
         .skip(skip)
         .limit(limit),
       Topic.countDocuments(query),
+      Topic.exists({
+        'topic_group_student': {
+          $elemMatch: {
+            student: req.user.id,
+            status: 'approved'
+          }
+        }
+      })
     ]);
 
     // Add virtual fields
@@ -111,6 +134,7 @@ const getAvailableTopics = async (req, res, next) => {
       success: true,
       count: topics.length,
       pagination,
+      has_approved_topic: !!hasApprovedTopic,
       data: topicsWithSlots,
       filters: {
         search: req.query.search || '',
@@ -144,22 +168,31 @@ const getTopicById = async (req, res, next) => {
         'topic_category_title topic_category_description'
       )
       .populate('topic_major', 'major_title major_description')
-      .populate('topic_creator', 'user_name email user_id user_avatar')
+      .populate('topic_creator', 'user_name email user_id user_avatar role')
       .populate(
         'topic_instructor',
         'user_name email user_id user_phone user_avatar'
       )
       .populate('topic_reviewer', 'user_name email user_id')
       .populate('topic_group_student.student', 'user_name user_id user_avatar')
-      .populate('topic_assembly', 'assembly_name')
-      .populate('rubric_instructor.rubric_id', 'rubric_name')
-      .populate('rubric_reviewer.rubric_id', 'rubric_name')
-      .populate('rubric_assembly.rubric_id', 'rubric_name');
+      .populate('topic_assembly', 'assembly_name');
 
     if (!topic) {
       return res.status(404).json({
         success: false,
         message: 'Đề tài không tồn tại',
+      });
+    }
+
+    // Prevent access if it is proposed by ANOTHER student
+    if (
+      topic.topic_creator && 
+      topic.topic_creator.role === 'student' && 
+      topic.topic_creator._id.toString() !== req.user.id
+    ) {
+      return res.status(403).json({
+        success: false,
+        message: 'Bạn không có quyền xem đề tài đề xuất của sinh viên khác',
       });
     }
 
@@ -181,6 +214,16 @@ const getTopicById = async (req, res, next) => {
         member.status === 'pending'
     );
 
+    // Check if student has ALREADY an approved topic in ANY topic
+    const hasApprovedTopicGlobally = await Topic.exists({
+      'topic_group_student': {
+        $elemMatch: {
+          student: req.user.id,
+          status: 'approved'
+        }
+      }
+    });
+
     const topicData = {
       ...topic.toObject(),
       available_slots: topic.available_slots,
@@ -189,8 +232,9 @@ const getTopicById = async (req, res, next) => {
       student_info: {
         is_member: isMember,
         has_pending_request: hasPendingRequest,
+        has_approved_topic: !!hasApprovedTopicGlobally,
         can_register:
-          !isMember && !hasPendingRequest && topic.has_available_slots,
+          !isMember && !hasPendingRequest && topic.has_available_slots && !hasApprovedTopicGlobally,
       },
     };
 
@@ -237,6 +281,23 @@ const registerForTopic = async (req, res, next) => {
       return res.status(403).json({
         success: false,
         message: 'Bạn không được đăng ký trong đợt này',
+      });
+    }
+
+    // Check if student already has an approved topic
+    const hasApprovedTopic = await Topic.findOne({
+      'topic_group_student': {
+        $elemMatch: {
+          student: studentId,
+          status: 'approved'
+        }
+      }
+    });
+
+    if (hasApprovedTopic) {
+      return res.status(400).json({
+        success: false,
+        message: 'Bạn đã có đề tài được duyệt, không thể đăng ký thêm',
       });
     }
 
@@ -301,8 +362,6 @@ const registerForTopic = async (req, res, next) => {
     // Add student to topic group
     topic.topic_group_student.push({
       student: studentId,
-      student_id: student.user_id,
-      student_name: student.user_name,
       status: 'pending',
       joined_at: new Date(),
     });
@@ -409,7 +468,23 @@ const cancelRegistration = async (req, res, next) => {
 const proposeTopic = async (req, res, next) => {
   try {
     const studentId = req.user.id;
-    const student = await User.findById(studentId);
+    const student = await User.findById(studentId).populate('user_major');
+
+    if (!student) {
+      return res.status(404).json({
+        success: false,
+        message: 'Sinh viên không tồn tại',
+      });
+    }
+
+    // Check if student has major
+    if (!student.user_major) {
+      return res.status(400).json({
+        success: false,
+        message:
+          'Vui lòng cập nhật ngành học trong hồ sơ trước khi đề xuất đề tài',
+      });
+    }
 
     // Check active registration period
     const activePeriod = await RegistrationPeriod.findOne({
@@ -427,6 +502,23 @@ const proposeTopic = async (req, res, next) => {
       });
     }
 
+    // Check if student already has an approved topic
+    const hasApprovedTopic = await Topic.findOne({
+      'topic_group_student': {
+        $elemMatch: {
+          student: studentId,
+          status: 'approved'
+        }
+      }
+    });
+
+    if (hasApprovedTopic) {
+      return res.status(400).json({
+        success: false,
+        message: 'Bạn đã có đề tài được duyệt, không thể đề xuất thêm',
+      });
+    }
+
     // Validate proposal data
     const {
       topic_title,
@@ -436,21 +528,8 @@ const proposeTopic = async (req, res, next) => {
       topic_advisor_request,
     } = req.body;
 
-    // Xử lý topic_major (nếu User đang lưu major dạng String thì cần tìm ObjectId tương ứng)
-    let topicMajorId = student.user_major;
-    if (topicMajorId && !mongoose.Types.ObjectId.isValid(topicMajorId)) {
-      const Major = mongoose.model('Major');
-      const foundMajor = await Major.findOne({
-        $or: [{ major_title: topicMajorId }, { major_code: topicMajorId }],
-      });
-      if (foundMajor) {
-        topicMajorId = foundMajor._id;
-      } else {
-        // Fallback: Nếu không tìm thấy, để null hoặc báo lỗi tùy logic.
-        // Ở đây để Topic validator báo lỗi nếu required
-        topicMajorId = undefined;
-      }
-    }
+    // Xử lý topic_major từ student.user_major
+    const topicMajorId = student.user_major._id || student.user_major;
 
     // Xử lý topic_instructor (Tìm giảng viên nếu sinh viên có ghi tên/mã GV)
     let topicInstructorId = undefined;
@@ -470,15 +549,13 @@ const proposeTopic = async (req, res, next) => {
 
     // Create new topic
     const newTopic = await Topic.create({
-      topic_registration_period: activePeriod.registration_period_semester,
-      topic_registration_period_ref: activePeriod._id,
+      topic_registration_period: activePeriod._id,
       topic_title,
       topic_description,
       topic_category,
       topic_major: topicMajorId,
       topic_instructor: topicInstructorId, // Gán ID giảng viên để họ thấy đề tài
       topic_creator: studentId,
-      topic_creator_id: student.user_id,
       topic_max_members,
       topic_advisor_request,
       topic_teacher_status: 'pending',
@@ -516,8 +593,6 @@ const proposeTopic = async (req, res, next) => {
     // Add creator as first member (pending approval)
     newTopic.topic_group_student.push({
       student: studentId,
-      student_id: student.user_id,
-      student_name: student.user_name,
       status: 'pending',
       joined_at: new Date(),
     });
@@ -686,9 +761,6 @@ const getMyTopic = async (req, res, next) => {
       .populate('topic_instructor', 'user_name email user_phone')
       .populate('topic_reviewer', 'user_name email')
       .populate('topic_group_student.student', 'user_name user_id user_avatar')
-      .populate('rubric_instructor.rubric_id', 'rubric_name')
-      .populate('rubric_reviewer.rubric_id', 'rubric_name')
-      .populate('rubric_assembly.rubric_id', 'rubric_name')
       .sort({ 'topic_group_student.status': 1 }); // Sort status to get 'approved' before 'pending' if somehow both exist (rare)
 
     if (!topic) {
@@ -949,40 +1021,47 @@ const getMyTopics = async (req, res, next) => {
  */
 const getGrades = async (req, res, next) => {
   try {
-    const studentId = req.user.user_id;
+    const studentObjectId = req.user.id;
+    const studentUserIdString = req.user.user_id;
+
     const Scoreboard = require('../../models/Scoreboard');
 
-    const grades = await Scoreboard.find({ student_id: studentId }).populate(
-      'topic_id',
-      'topic_title'
-    );
+    const grades = await Scoreboard.find({
+      $or: [
+        { student_id: studentObjectId },
+        { student_id: studentUserIdString },
+      ],
+    })
+      .populate('topic_id', 'topic_title')
+      .populate('grader', 'user_name user_id');
 
-    const graderIds = [
-      ...new Set(
-        grades.map((grade) => grade.grader).filter((grader) => !!grader)
-      ),
-    ];
+    const gradesData = grades.map((grade) => {
+      const feedbackArray = [];
+      if (grade.comments) {
+        feedbackArray.push({
+          reviewer_name: grade.grader?.user_name || 'Giảng viên',
+          created_at: grade.updated_at || grade.created_at,
+          comment: grade.comments,
+        });
+      }
 
-    const graders = graderIds.length
-      ? await User.find({ user_id: { $in: graderIds } }).select(
-          'user_id user_name'
-        )
-      : [];
-
-    const graderMap = new Map(
-      graders.map((grader) => [grader.user_id, grader.user_name])
-    );
-
-    const gradesData = grades.map((grade) => ({
-      _id: grade._id,
-      topic_title: grade.topic_id?.topic_title,
-      final_score: grade.total_score || 0,
-      rubric_scores: grade.rubric_student_evaluations || [],
-      evaluator: graderMap.get(grade.grader) || '',
-      feedback: '',
-      student_grades: grade.student_grades || '',
-      created_at: grade.created_at,
-    }));
+      return {
+        _id: grade._id,
+        topic_title: grade.topic_id?.topic_title || 'Đề tài không xác định',
+        teacher_name: grade.grader?.user_name,
+        final_score: grade.total_score || 0,
+        rubric_scores: (grade.rubric_student_evaluations || []).map((r) => ({
+          criteria: r.criteria_name || '',
+          score: r.score || 0,
+          max_score: r.max_score || 10,
+          comment: r.comment || '',
+        })),
+        evaluator: grade.grader?.user_name || '',
+        feedback: feedbackArray,
+        student_grades: grade.student_grades || '',
+        created_at: grade.created_at,
+      };
+    });
 
     res.status(200).json({
       success: true,
@@ -1006,6 +1085,15 @@ const getRegistrationHistory = async (req, res, next) => {
     })
       .populate('topic_instructor', 'user_name user_id')
       .populate('topic_category', 'topic_category_title')
+      .populate({
+        path: 'topic_registration_period',
+        select: 'registration_period_semester semester_id',
+        populate: {
+          path: 'semester_id',
+          model: 'Semester',
+          select: 'semester school_year_start school_year_end',
+        },
+      })
       .select(
         'topic_title topic_registration_period topic_category topic_group_student created_at'
       )
@@ -1015,15 +1103,33 @@ const getRegistrationHistory = async (req, res, next) => {
       const member = (topic.topic_group_student || []).find(
         (m) => m.student && m.student.toString() === studentId
       );
+
+      const period = topic.topic_registration_period;
+      let semesterName = period?.registration_period_semester || '';
+      let academicYear = '';
+
+      if (period?.semester_id) {
+        semesterName = `Học kỳ ${period.semester_id.semester || period.registration_period_semester}`;
+        if (
+          period.semester_id.school_year_start &&
+          period.semester_id.school_year_end
+        ) {
+          academicYear = `${period.semester_id.school_year_start}-${period.semester_id.school_year_end}`;
+        }
+      }
+
       return {
         _id: topic._id,
-        semester: topic.topic_registration_period || '',
-        semester_name: topic.topic_registration_period || '',
+        semester: semesterName,
+        semester_name: semesterName,
+        academic_year: academicYear,
         topic_title: topic.topic_title,
         teacher_name: topic.topic_instructor?.user_name,
         status: member?.status || 'pending',
         topic_category: topic.topic_category?.topic_category_title || '',
         created_at: member?.joined_at || topic.created_at,
+        rejection_reason: '', // Not implemented in model yet
+        notes: '', // Not implemented in model yet
       };
     });
 
@@ -1101,7 +1207,7 @@ const submitMilestone = async (req, res, next) => {
   try {
     const studentId = req.user.id;
     const { id, milestoneIndex } = req.params;
-    const { notes, attachments } = req.body;
+    const { notes } = req.body;
 
     const topic = await Topic.findOne({
       _id: id,
@@ -1125,10 +1231,25 @@ const submitMilestone = async (req, res, next) => {
 
     // Update milestone
     topic.milestones[milestoneIndex].status = 'completed'; // For now, allow student to mark as completed to see the % move
-    topic.milestones[milestoneIndex].notes = notes;
+    topic.milestones[milestoneIndex].notes = notes || req.body.notes;
     topic.milestones[milestoneIndex].completed_date = new Date();
-    if (attachments) {
-      topic.milestones[milestoneIndex].attachments = attachments;
+
+    if (req.file) {
+      const reportPath = `/uploads/reports/${req.file.filename}`;
+      topic.milestones[milestoneIndex].attachments = [reportPath];
+
+      // If this is considered the final report based on name, update the topic level field
+      const msName = (
+        topic.milestones[milestoneIndex].name || ''
+      ).toLowerCase();
+      if (
+        msName.includes('báo cáo cuối kỳ') ||
+        msName.includes('báo cáo cuối')
+      ) {
+        topic.topic_final_report = reportPath;
+      }
+    } else if (req.body.attachments) {
+      topic.milestones[milestoneIndex].attachments = req.body.attachments;
     }
 
     await topic.save();
@@ -1137,6 +1258,68 @@ const submitMilestone = async (req, res, next) => {
       success: true,
       message: 'Cập nhật tiến độ thành công',
       data: topic.milestones[milestoneIndex],
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+/**
+ * @desc    Upload final report for a topic
+ * @route   POST /api/student/topics/:id/upload-report
+ * @access  Private/Student
+ */
+const uploadFinalReport = async (req, res, next) => {
+  try {
+    const studentId = req.user.id;
+    const topicId = req.params.id;
+
+    if (!req.file) {
+      return res.status(400).json({
+        success: false,
+        message: 'Vui lòng tải lên một tệp tin',
+      });
+    }
+
+    const topic = await Topic.findOne({
+      _id: topicId,
+      'topic_group_student.student': studentId,
+      'topic_group_student.status': 'approved',
+    });
+
+    if (!topic) {
+      return res.status(404).json({
+        success: false,
+        message:
+          'Đề tài không tồn tại hoặc bạn không phải thành viên chính thức',
+      });
+    }
+
+    // Update topic final report path
+    // Save as relative path to be served by express.static
+    const reportPath = `/uploads/reports/${req.file.filename}`;
+    topic.topic_final_report = reportPath;
+
+    // Find "Nộp báo cáo cuối kỳ" milestone and mark as completed if it exists
+    if (topic.milestones) {
+      const finalReportIndex = topic.milestones.findIndex((m) =>
+        m.name.toLowerCase().includes('báo cáo cuối kỳ')
+      );
+      if (finalReportIndex !== -1) {
+        topic.milestones[finalReportIndex].status = 'completed';
+        topic.milestones[finalReportIndex].completed_date = new Date();
+        topic.milestones[finalReportIndex].attachments = [reportPath];
+      }
+    }
+
+    await topic.save();
+
+    res.status(200).json({
+      success: true,
+      message: 'Nộp báo cáo cuối kỳ thành công',
+      data: {
+        report_url: reportPath,
+      },
     });
   } catch (error) {
     next(error);
@@ -1159,4 +1342,5 @@ module.exports = {
   getRegistrationHistory,
   getStatistics,
   submitMilestone,
+  uploadFinalReport,
 };

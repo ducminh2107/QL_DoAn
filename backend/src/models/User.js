@@ -35,6 +35,20 @@ const userSchema = new mongoose.Schema(
       required: [true, 'Ho ten la bat buoc'],
       trim: true,
     },
+    user_title: {
+      type: String,
+      enum: [
+        'Cử nhân',
+        'Kỹ sư',
+        'Thạc sĩ',
+        'Tiến sĩ',
+        'PGS.TS',
+        'GS.TS',
+        'Khác',
+        '',
+      ],
+      default: '',
+    },
     user_avatar: {
       type: String,
       default:
@@ -50,8 +64,14 @@ const userSchema = new mongoose.Schema(
     user_permanent_address: String,
     user_temporary_address: String,
     user_department: String,
-    user_faculty: String,
-    user_major: String,
+    user_faculty: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'Faculty',
+    },
+    user_major: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'Major',
+    },
     user_gender: {
       type: String,
       enum: ['Nam', 'Nữ', 'Khác'],

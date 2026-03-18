@@ -1,0 +1,21 @@
+user_id,user_name,email,user_phone,role,user_gender,user_class,user_academic_year,user_department,user_training_system,user_CCCD,user_permanent_address
+SV001,Nguyễn Văn An,sv001@student.edu.vn,0901234501,student,Nam,SE1701,K17,Kỹ thuật phần mềm,Đại học chính quy,079012345671,Hà Nội
+SV002,Trần Thị Bình,sv002@student.edu.vn,0901234502,student,Nữ,SE1702,K17,Kỹ thuật phần mềm,Đại học chính quy,079012345672,Hải Phòng
+SV003,Lê Hoàng Cường,sv003@student.edu.vn,0901234503,student,Nam,IA1701,K17,Trí tuệ nhân tạo,Đại học chính quy,079012345673,Lào Cai
+SV004,Phạm Thị Dung,sv004@student.edu.vn,0901234504,student,Nữ,SE1703,K17,Kỹ thuật phần mềm,Đại học chính quy,079012345674,Nam Định
+SV005,Hoàng Văn Em,sv005@student.edu.vn,0901234505,student,Nam,IS1701,K17,An toàn thông tin,Đại học chính quy,079012345675,Thanh Hóa
+SV006,Ngô Thị Phượng,sv006@student.edu.vn,0901234506,student,Nữ,SE1701,K17,Kỹ thuật phần mềm,Đại học chính quy,079012345676,Nam Định
+SV007,Vũ Văn Giang,sv007@student.edu.vn,0901234507,student,Nam,IA1702,K17,Trí tuệ nhân tạo,Đại học chính quy,079012345677,Thái Bình
+SV008,Đặng Thị Hoa,sv008@student.edu.vn,0901234508,student,Nữ,IS1702,K17,An toàn thông tin,Đại học chính quy,079012345678,Hưng Yên
+SV009,Bùi Hoàng Inh,sv009@student.edu.vn,0901234509,student,Nam,SE1702,K17,Kỹ thuật phần mềm,Đại học chất lượng cao,079012345679,Ninh Bình
+SV010,Đỗ Văn Khoa,sv010@student.edu.vn,0901234510,student,Nam,SE1701,K17,Kỹ thuật phần mềm,Đại học chính quy,079012345680,Hà Nam
+SV011,Hồ Thị Liên,sv011@student.edu.vn,0901234511,student,Nữ,IA1701,K17,Trí tuệ nhân tạo,Đại học chính quy,079012345681,Bắc Ninh
+SV012,Dương Văn Mạnh,sv012@student.edu.vn,0901234512,student,Nam,IS1701,K17,An toàn thông tin,Đại học chính quy,079012345682,Hải Dương
+SV013,Lý Thị Năm,sv013@student.edu.vn,0901234513,student,Nữ,SE1703,K17,Kỹ thuật phần mềm,Đại học chính quy,079012345683,Hà Nội
+SV014,Vương Hoàng Oanh,sv014@student.edu.vn,0901234514,student,Nữ,SE1702,K17,Kỹ thuật phần mềm,Đại học chức lượng cao,079012345684,Bắc Giang
+SV015,Trịnh Văn Phong,sv015@student.edu.vn,0901234515,student,Nam,IA1702,K17,Trí tuệ nhân tạo,Đại học chính quy,079012345685,Hà Nội
+SV016,Đoàn Thị Quyên,sv016@student.edu.vn,0901234516,student,Nữ,IS1702,K17,An toàn thông tin,Đại học chính quy,079012345686,Đà Nẵng
+SV017,Lâm Văn Ruy,sv017@student.edu.vn,0901234517,student,Nam,SE1701,K17,Kỹ thuật phần mềm,Đại học chính quy,079012345687,Cần Thơ
+SV018,Mai Thị Sương,sv018@student.edu.vn,0901234518,student,Nữ,SE1701,K17,Kỹ thuật phần mềm,Đại học chính quy,079012345688,Hồ Chí Minh
+SV019,Tô Văn Tài,sv019@student.edu.vn,0901234519,student,Nam,IA1701,K17,Trí tuệ nhân tạo,Đại học chính quy,079012345689,Đồng Nai
+SV020,Phan Thị Uyên,sv020@student.edu.vn,0901234520,student,Nữ,IS1701,K17,An toàn thông tin,Đại học chính quy,079012345690,Vũng Tàu

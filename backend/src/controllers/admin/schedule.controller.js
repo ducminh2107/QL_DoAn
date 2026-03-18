@@ -13,7 +13,8 @@ exports.getAllSchedules = async (req, res) => {
       .sort({ start_date: 1 })
       .skip((page - 1) * limit)
       .limit(parseInt(limit))
-      .populate('created_by', 'user_name email');
+      .populate('created_by', 'user_name email')
+      .populate('council_id', 'council_name');
 
     const total = await Schedule.countDocuments(filter);
 
@@ -40,10 +41,9 @@ exports.getScheduleById = async (req, res) => {
   try {
     const { id } = req.params;
 
-    const schedule = await Schedule.findById(id).populate(
-      'created_by',
-      'user_name email'
-    );
+    const schedule = await Schedule.findById(id)
+      .populate('created_by', 'user_name email')
+      .populate('council_id', 'council_name');
 
     if (!schedule) {
       return res
@@ -61,8 +61,15 @@ exports.getScheduleById = async (req, res) => {
 // Create schedule
 exports.createSchedule = async (req, res) => {
   try {
-    const { schedule_name, description, start_date, end_date, status } =
-      req.body;
+    const {
+      schedule_name,
+      description,
+      start_date,
+      end_date,
+      status,
+      council_id,
+      location,
+    } = req.body;
 
     if (!schedule_name || !start_date || !end_date) {
       return res.status(400).json({
@@ -77,6 +84,8 @@ exports.createSchedule = async (req, res) => {
       start_date: new Date(start_date),
       end_date: new Date(end_date),
       status: status || 'scheduled',
+      council_id: council_id || undefined,
+      location: location || '',
       created_by: req.user._id,
     });
 
@@ -87,7 +96,7 @@ exports.createSchedule = async (req, res) => {
       action: 'CREATE_SCHEDULE',
       collection_name: 'schedules',
       document_id: schedule._id,
-      user_id: req.user.user_id,
+      user_id: req.user.id,
       changes: { schedule_name, start_date, end_date, status },
       ip_address: req.ip,
     });
@@ -107,8 +116,15 @@ exports.createSchedule = async (req, res) => {
 exports.updateSchedule = async (req, res) => {
   try {
     const { id } = req.params;
-    const { schedule_name, description, start_date, end_date, status } =
-      req.body;
+    const {
+      schedule_name,
+      description,
+      start_date,
+      end_date,
+      status,
+      council_id,
+      location,
+    } = req.body;
 
     const schedule = await Schedule.findByIdAndUpdate(
       id,
@@ -118,6 +134,8 @@ exports.updateSchedule = async (req, res) => {
         start_date: new Date(start_date),
         end_date: new Date(end_date),
         status,
+        council_id: council_id || undefined,
+        location: location || '',
         updated_at: Date.now(),
       },
       { new: true }
@@ -134,7 +152,7 @@ exports.updateSchedule = async (req, res) => {
       action: 'UPDATE_SCHEDULE',
       collection_name: 'schedules',
       document_id: schedule._id,
-      user_id: req.user.user_id,
+      user_id: req.user.id,
       changes: { schedule_name, start_date, end_date, status },
       ip_address: req.ip,
     });
@@ -170,7 +188,7 @@ exports.deleteSchedule = async (req, res) => {
       action: 'DELETE_SCHEDULE',
       collection_name: 'schedules',
       document_id: schedule._id,
-      user_id: req.user.user_id,
+      user_id: req.user.id,
       changes: { schedule_name: schedule.schedule_name },
       ip_address: req.ip,
     });

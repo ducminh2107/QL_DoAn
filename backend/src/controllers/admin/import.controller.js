@@ -1,11 +1,14 @@
 const fs = require('fs');
 const path = require('path');
 const mongoose = require('mongoose');
+const xlsx = require('xlsx');
 const User = require('../../models/User');
 const Topic = require('../../models/Topic');
 const Semester = require('../../models/Semester');
 const Faculty = require('../../models/Faculty');
 const SystemLog = require('../../models/SystemLog');
+const TopicCategory = require('../../models/TopicCategory');
+const Major = require('../../models/Major');
 
 // Simple CSV parser
 const parseCSVLine = (line) => {
@@ -68,7 +71,7 @@ exports.importData = async (req, res) => {
     await SystemLog.create({
       action: 'IMPORT_DATA',
       collection_name: type,
-      user_id: req.user.user_id,
+      user_id: req.user.id,
       changes: { format, count: importedCount },
       ip_address: req.ip,
     });
@@ -138,18 +141,84 @@ const parseCSVFile = async (filePath, type, errors) => {
   });
 };
 
-// Parse Excel file (placeholder - requires xlsx library)
+// Parse Excel file
 const parseExcelFile = async (filePath, type, errors) => {
-  // Implement based on xlsx library
-  return 0;
+  return new Promise((resolve) => {
+    try {
+      const workbook = xlsx.readFile(filePath);
+      const sheetName = workbook.SheetNames[0];
+      const sheet = workbook.Sheets[sheetName];
+      
+      // Convert to json, raw: false to format dates/numbers nicely
+      const rows = xlsx.utils.sheet_to_json(sheet, { defval: '' });
+      let count = 0;
+
+      (async () => {
+        for (let i = 0; i < rows.length; i++) {
+          try {
+            const row = rows[i];
+            switch (type) {
+              case 'users':
+                await importUser(row);
+                break;
+              case 'topics':
+                await importTopic(row);
+                break;
+              case 'semesters':
+                await importSemester(row);
+                break;
+              case 'faculties':
+                await importFaculty(row);
+                break;
+            }
+            count++;
+          } catch (error) {
+            errors.push({ row: i + 2, error: error.message });
+          }
+        }
+        resolve(count);
+      })();
+    } catch (e) {
+      console.error('Error parsing excel:', e);
+      resolve(0);
+    }
+  });
 };
 
 // Import user
 const importUser = async (row) => {
-  const { user_id, user_name, email, user_phone, phone, role } = row;
+  const { 
+    user_id, user_name, email, user_phone, phone, role, 
+    user_title, user_gender, user_class, user_academic_year, 
+    user_department, user_CCCD, user_permanent_address, 
+    user_training_system, user_faculty, user_major 
+  } = row;
 
   if (!user_id || !user_name || !email) {
-    throw new Error('Missing required fields');
+    throw new Error('Missing required fields ' + JSON.stringify({user_id, user_name, email}));
+  }
+
+  // Resolve Faculty
+  let facultyId = user_faculty;
+  if (user_faculty && !mongoose.Types.ObjectId.isValid(user_faculty)) {
+    const facultyDoc = await Faculty.findOne({ 
+      faculty_title: { $regex: new RegExp(`^${user_faculty}$`, 'i') } 
+    });
+    if (facultyDoc) facultyId = facultyDoc._id;
+    else facultyId = undefined;
+  }
+
+  // Resolve Major
+  let majorId = user_major;
+  if (user_major && !mongoose.Types.ObjectId.isValid(user_major)) {
+    const majorDoc = await Major.findOne({ 
+      $or: [
+        { major_title: { $regex: new RegExp(`^${user_major}$`, 'i') } },
+        { major_code: { $regex: new RegExp(`^${user_major}$`, 'i') } }
+      ]
+    });
+    if (majorDoc) majorId = majorDoc._id;
+    else majorId = undefined;
   }
 
   const existingUser = await User.findOne({
@@ -165,6 +234,16 @@ const importUser = async (row) => {
       role: role || 'student',
       user_status: true,
       password: 'default123', // Should be changed on first login
+      user_title: user_title || (role === 'teacher' ? 'Thạc sĩ' : ''),
+      user_gender: user_gender || 'Nam',
+      user_class: user_class || '',
+      user_academic_year: user_academic_year || '',
+      user_department: user_department || '',
+      user_CCCD: user_CCCD || undefined,
+      user_permanent_address: user_permanent_address || '',
+      user_training_system: user_training_system || 'Đại học chính quy',
+      user_faculty: facultyId,
+      user_major: majorId
     });
     await newUser.save();
   }
@@ -185,6 +264,27 @@ const importTopic = async (row) => {
 
   if (!topic_title || !topic_category || !topic_major) {
     throw new Error('Missing required topic fields');
+  }
+
+  // Resolve Category
+  let categoryId = topic_category;
+  if (!mongoose.Types.ObjectId.isValid(topic_category)) {
+    const categoryDoc = await TopicCategory.findOne({ 
+      topic_category_title: { $regex: new RegExp(`^${topic_category}$`, 'i') } 
+    });
+    if (categoryDoc) categoryId = categoryDoc._id;
+  }
+
+  // Resolve Major
+  let majorId = topic_major;
+  if (!mongoose.Types.ObjectId.isValid(topic_major)) {
+    const majorDoc = await Major.findOne({ 
+      $or: [
+        { major_title: { $regex: new RegExp(`^${topic_major}$`, 'i') } },
+        { major_code: { $regex: new RegExp(`^${topic_major}$`, 'i') } }
+      ]
+    });
+    if (majorDoc) majorId = majorDoc._id;
   }
 
   let creatorKey = topic_creator || topic_creator_id || topic_creator_user_id;
@@ -215,14 +315,15 @@ const importTopic = async (row) => {
     const newTopic = new Topic({
       topic_title,
       topic_description,
-      topic_category,
-      topic_major,
+      topic_category: categoryId,
+      topic_major: majorId,
       topic_creator: creatorObjectId,
       topic_creator_id: creatorUserId || undefined,
       topic_max_members: parseInt(topic_max_members || 1, 10),
       topic_registration_period,
       topic_teacher_status: topic_teacher_status || 'approved',
       topic_leader_status: 'pending',
+      is_system_topic: row.is_system_topic === 'true' || row.is_system_topic === true ? true : false,
       is_active: true,
     });
     await newTopic.save();
@@ -324,11 +425,11 @@ exports.getTemplate = async (req, res) => {
 
     if (type === 'users') {
       csvContent =
-        'user_id,user_name,email,user_phone,role\nSV001,Nguyen Van A,sv001@example.com,0123456789,student';
+        'user_id,user_name,email,user_phone,role,user_gender,user_class,user_faculty,user_major,user_academic_year,user_training_system,user_CCCD,user_title,user_department,user_permanent_address\nSV001,Nguyen Van A,sv001@example.com,0123456789,student,Nam,CNTT-1,Khoa CNTT,Ky thuat phan mem,2021-2025,Đại học chính quy,012345678901,Cử nhân,Đào tạo,Hà Nội';
     }
     if (type === 'topics') {
       csvContent =
-        'topic_title,topic_description,topic_category,topic_major,topic_max_members,topic_creator_id,topic_registration_period\nDe tai mau,Mo ta de tai,TOPIC_CATEGORY_ID,MAJOR_ID,1,GV001,HK1-2024';
+        'topic_title,topic_description,topic_category,topic_major,topic_max_members,topic_creator_id,topic_registration_period,is_system_topic\nDe tai mau,Mo ta de tai,Ten danh muc hoac ID,Ten nganh / Ma nganh hoac ID,2,GV001,HK1-2024,false';
     }
     if (type === 'semesters') {
       csvContent = 'school_year_start,school_year_end,semester\n2024,2025,1';
@@ -338,9 +439,10 @@ exports.getTemplate = async (req, res) => {
         'faculty_title,faculty_description\nKhoa CNTT,Khoa Cong Nghe Thong Tin';
     }
 
-    res.setHeader('Content-Type', 'text/csv');
+    res.setHeader('Content-Type', 'text/csv; charset=utf-8');
     res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
-    res.send(csvContent);
+    // Add BOM for Excel UTF-8 display correctly
+    res.send('\uFEFF' + csvContent);
   } catch (error) {
     console.error('Error getting template:', error);
     res.status(500).json({ success: false, message: 'Lỗi lấy template' });

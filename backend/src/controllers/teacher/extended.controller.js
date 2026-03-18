@@ -11,9 +11,9 @@ const User = require('../../models/User');
  */
 const getRubricEvaluations = async (req, res, next) => {
   try {
-    const teacherUserId = req.user.user_id;
+    const teacherId = req.user._id;
 
-    const evaluations = await Scoreboard.find({ grader: teacherUserId })
+    const evaluations = await Scoreboard.find({ grader: teacherId })
       .populate('topic_id', 'topic_title')
       .sort({ created_at: -1 });
 
@@ -64,7 +64,7 @@ const submitRubricEvaluation = async (req, res, next) => {
   try {
     const { studentId } = req.params;
     const { topicId, score, criteria_scores, rubric_category } = req.body;
-    const teacherUserId = req.user.user_id;
+    const teacherId = req.user._id;
 
     if (score === undefined || score < 0 || score > 10) {
       return res.status(400).json({
@@ -77,7 +77,7 @@ const submitRubricEvaluation = async (req, res, next) => {
       {
         student_id: studentId,
         topic_id: topicId,
-        grader: teacherUserId,
+        grader: teacherId,
       },
       {
         total_score: score,
@@ -106,14 +106,14 @@ const submitRubricEvaluation = async (req, res, next) => {
  */
 const getTeacherCouncils = async (req, res, next) => {
   try {
-    const teacherUserId = req.user.user_id;
+    const teacherId = req.user._id;
     const { status } = req.query;
 
     const filter = {
       $or: [
-        { chairman: teacherUserId },
-        { secretary: teacherUserId },
-        { 'members.member_id': teacherUserId },
+        { chairman: teacherId },
+        { secretary: teacherId },
+        { 'members.member_id': teacherId },
       ],
     };
 
@@ -137,25 +137,25 @@ const getTeacherCouncils = async (req, res, next) => {
     const userIdSet = new Set();
     assemblies.forEach((assembly) => {
       if (assembly.chairman) {
-        userIdSet.add(assembly.chairman);
+        userIdSet.add(assembly.chairman.toString());
       }
       if (assembly.secretary) {
-        userIdSet.add(assembly.secretary);
+        userIdSet.add(assembly.secretary.toString());
       }
       (assembly.members || []).forEach((member) => {
         if (member.member_id) {
-          userIdSet.add(member.member_id);
+          userIdSet.add(member.member_id.toString());
         }
       });
     });
 
     const users = userIdSet.size
-      ? await User.find({ user_id: { $in: Array.from(userIdSet) } }).select(
-          'user_id user_name'
+      ? await User.find({ _id: { $in: Array.from(userIdSet) } }).select(
+          '_id user_name'
         )
       : [];
     const userMap = new Map(
-      users.map((user) => [user.user_id, user.user_name])
+      users.map((user) => [user._id.toString(), user.user_name])
     );
 
     const statusOutMap = {
@@ -165,15 +165,34 @@ const getTeacherCouncils = async (req, res, next) => {
       cancelled: 'cancelled',
     };
 
+    const Topic = require('../../models/Topic');
+    const topics = await Topic.find({
+      topic_assembly: { $in: assemblies.map((a) => a._id) },
+    }).select('_id topic_title topic_assembly');
+
+    const Scoreboard = require('../../models/Scoreboard');
+    const scoreboards = await Scoreboard.find({
+      topic_id: { $in: topics.map((t) => t._id) },
+      rubric_category: 'assembly',
+      grader: teacherId,
+    });
+
     const data = assemblies.map((assembly) => {
       let role = 'member';
-      if (assembly.chairman === teacherUserId) {
+      if (
+        assembly.chairman &&
+        assembly.chairman.toString() === teacherId.toString()
+      ) {
         role = 'chair';
-      } else if (assembly.secretary === teacherUserId) {
+      } else if (
+        assembly.secretary &&
+        assembly.secretary.toString() === teacherId.toString()
+      ) {
         role = 'secretary';
       } else {
         const member = (assembly.members || []).find(
-          (item) => item.member_id === teacherUserId
+          (item) =>
+            item.member_id && item.member_id.toString() === teacherId.toString()
         );
         if (member?.role) {
           role = member.role;
@@ -186,13 +205,31 @@ const getTeacherCouncils = async (req, res, next) => {
         name: assembly.assembly_name,
         role,
         members: (assembly.members || []).map((member) => ({
-          name: member.member_name || userMap.get(member.member_id) || '',
+          name:
+            member.member_name ||
+            (member.member_id ? userMap.get(member.member_id.toString()) : ''),
           role: member.role,
         })),
         meeting_date: assembly.defense_date,
         location: assembly.defense_location,
         status: statusOutMap[assembly.assembly_status] || 'scheduled',
         description: assembly.assembly_description || '',
+        topics: topics
+          .filter(
+            (t) =>
+              t.topic_assembly &&
+              t.topic_assembly.toString() === assembly._id.toString()
+          )
+          .map((t) => {
+            const graded = scoreboards.some(
+              (s) => s.topic_id.toString() === t._id.toString()
+            );
+            return {
+              _id: t._id,
+              topic_title: t.topic_title,
+              grading_status: graded ? 'graded' : 'pending',
+            };
+          }),
       };
     });
 
@@ -230,16 +267,23 @@ const getStudentsProgress = async (req, res, next) => {
             (s) => s.student_id === member.student._id.toString()
           );
           if (!existing) {
+            let actualProgress = 0;
+            if (topic.milestones && topic.milestones.length > 0) {
+              const completedCount = topic.milestones.filter(
+                (m) => m.status === 'completed' || m.completed_date
+              ).length;
+              actualProgress = (completedCount / topic.milestones.length) * 100;
+            }
+
             students.push({
               student_id: member.student._id,
               student_name: member.student.user_name,
               student_code: member.student.user_id,
-              progress: Math.random() * 100,
+              progress: actualProgress,
               topic_title: topic.topic_title,
-              status: 'in_progress',
-              last_submission: new Date(
-                Date.now() - Math.random() * 30 * 24 * 60 * 60 * 1000
-              ),
+              topic_id: topic._id,
+              status: actualProgress === 100 ? 'completed' : 'in_progress',
+              last_submission: topic.updatedAt || new Date(),
             });
           }
         }
@@ -249,6 +293,59 @@ const getStudentsProgress = async (req, res, next) => {
     res.status(200).json({
       success: true,
       data: students,
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+/**
+ * @desc    Send progress feedback to student
+ * @route   POST /api/teacher/students-progress/:studentId/feedback
+ * @access  Private/Teacher
+ */
+const sendProgressFeedback = async (req, res, next) => {
+  try {
+    const { studentId } = req.params;
+    const { feedback, topic_id } = req.body;
+    const teacherId = req.user.id;
+
+    if (!feedback) {
+      return res.status(400).json({
+        success: false,
+        message: 'Feedback is required',
+      });
+    }
+
+    const topic = await Topic.findOne({
+      _id: topic_id,
+      $or: [
+        { topic_instructor: teacherId },
+        { topic_instructor_id: req.user.user_id },
+      ],
+    });
+
+    if (!topic) {
+      return res.status(404).json({
+        success: false,
+        message: 'Topic not found or unauthorized',
+      });
+    }
+
+    // Save notes to the student array in topic if we wanted to...
+    // Or just send a Notification, which is simpler and makes more sense as "feedback"
+    const Notification = require('../../models/Notification');
+    await Notification.create({
+      user_notification_title: `Phản hồi tiến độ đề tài "${topic.topic_title}"`,
+      user_notification_sender: teacherId,
+      user_notification_recipient: studentId,
+      user_notification_content: feedback,
+      user_notification_type: 'system',
+    });
+
+    res.status(200).json({
+      success: true,
+      message: 'Đã gửi phản hồi thành công',
     });
   } catch (error) {
     next(error);
@@ -270,22 +367,57 @@ const getTeachingHistory = async (req, res, next) => {
         { topic_instructor_id: req.user.user_id },
       ],
     })
-      .populate('topic_group_student.student', 'user_name')
+      .populate('topic_group_student.student', 'user_name user_id')
+      .populate('topic_category', 'topic_category_title')
+      .populate(
+        'topic_registration_period',
+        'registration_period_semester registration_period_year'
+      )
       .select(
-        'topic_title topic_group_student rubric_instructor topic_registration_period created_at'
+        'topic_title topic_group_student topic_category topic_registration_period created_at is_completed status rubric_instructor updated_at'
       )
       .sort({ created_at: -1 });
 
-    const history = topics.map((topic) => ({
-      _id: topic._id,
-      topic_title: topic.topic_title,
-      students_count: topic.topic_group_student?.length || 0,
-      score: topic.rubric_instructor?.total_score || 0,
-      status: topic.is_completed ? 'completed' : 'ongoing',
-      category: topic.topic_category || '',
-      academic_year: topic.topic_registration_period || '',
-      completed_at: topic.updated_at,
-    }));
+    const topicIds = topics.map((t) => t._id);
+    const scoreboards = await Scoreboard.find({
+      topic_id: { $in: topicIds },
+      grader: teacherId,
+    });
+
+    const scoreboardMap = scoreboards.reduce((map, sb) => {
+      if (!map[sb.topic_id]) {
+        map[sb.topic_id] = sb.total_score;
+      }
+      return map;
+    }, {});
+
+    const history = topics.map((topic) => {
+      const students =
+        topic.topic_group_student?.filter((member) => member.student) || [];
+      const studentNames =
+        students.map((m) => m.student.user_name).join(', ') || 'Chưa phân công';
+      const studentIds = students.map((m) => m.student.user_id).join(', ');
+
+      const academicYear = topic.topic_registration_period
+        ? `Học kỳ ${topic.topic_registration_period.registration_period_semester} - Năm học ${topic.topic_registration_period.registration_period_year}`
+        : 'Chưa xác định';
+
+      return {
+        _id: topic._id,
+        topic_title: topic.topic_title,
+        students_count: students.length,
+        student_name: studentNames,
+        student_id: studentIds,
+        average_score:
+          scoreboardMap[topic._id] !== undefined
+            ? scoreboardMap[topic._id]
+            : null,
+        status: topic.is_completed ? 'completed' : 'ongoing',
+        category: topic.topic_category?.topic_category_title || '',
+        academic_year: academicYear,
+        completed_at: topic.updated_at,
+      };
+    });
 
     res.status(200).json({
       success: true,
@@ -342,6 +474,7 @@ module.exports = {
   submitRubricEvaluation,
   getTeacherCouncils,
   getStudentsProgress,
+  sendProgressFeedback,
   getTeachingHistory,
   downloadCertificate,
 };

@@ -34,6 +34,10 @@ const rubricSchema = new mongoose.Schema(
     rubric_evaluations: [rubricEvaluationSchema],
     rubric_note: String,
     rubric_template: { type: Boolean, default: false },
+    semester: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'Semester',
+    },
   },
   {
     timestamps: { createdAt: 'created_at', updatedAt: 'updated_at' },

@@ -24,6 +24,14 @@ const scheduleSchema = new mongoose.Schema(
       enum: ['scheduled', 'in_progress', 'completed', 'cancelled'],
       default: 'scheduled',
     },
+    council_id: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'Council',
+    },
+    location: {
+      type: String,
+      default: '',
+    },
     created_by: {
       type: mongoose.Schema.Types.ObjectId,
       ref: 'User',

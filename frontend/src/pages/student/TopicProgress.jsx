@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import {
   Container,
   Paper,
@@ -16,6 +16,11 @@ import {
   useTheme,
   alpha,
   Tooltip,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogActions,
+  TextField,
 } from "@mui/material";
 
 import {
@@ -27,6 +32,7 @@ import {
   Flag as FlagIcon,
   Assignment as TopicIcon,
   SpeakerNotes as NoteIcon,
+  CloudUpload as UploadIcon,
 } from "@mui/icons-material";
 import { useNavigate } from "react-router-dom";
 import axios from "axios";
@@ -38,12 +44,15 @@ const TopicProgress = () => {
   const [topics, setTopics] = useState([]);
   const [loading, setLoading] = useState(true);
   const [selectedTopic, setSelectedTopic] = useState(null);
+  const [uploading, setUploading] = useState(false);
 
-  useEffect(() => {
-    fetchTopicsProgress();
-  }, []);
+  // Milestone Update States
+  const [openMilestoneDialog, setOpenMilestoneDialog] = useState(false);
+  const [currentMilestoneIndex, setCurrentMilestoneIndex] = useState(null);
+  const [milestoneNotes, setMilestoneNotes] = useState("");
+  const [selectedFile, setSelectedFile] = useState(null);
 
-  const fetchTopicsProgress = async () => {
+  const fetchTopicsProgress = useCallback(async () => {
     try {
       setLoading(true);
       const response = await axios.get("/api/student/topics-progress");
@@ -52,17 +61,11 @@ const TopicProgress = () => {
 
       // Select the first topic by default or keep current selection if valid
       if (fetchedTopics.length > 0) {
-        if (
-          !selectedTopic ||
-          !fetchedTopics.find((t) => t._id === selectedTopic._id)
-        ) {
-          setSelectedTopic(fetchedTopics[0]);
-        } else {
-          const updated = fetchedTopics.find(
-            (t) => t._id === selectedTopic._id,
-          );
-          setSelectedTopic(updated);
-        }
+        setSelectedTopic((prev) => {
+          if (!prev) return fetchedTopics[0];
+          const updated = fetchedTopics.find((t) => t._id === prev._id);
+          return updated || fetchedTopics[0];
+        });
       }
     } catch (error) {
       console.error("Fetch topics progress error:", error);
@@ -73,54 +76,109 @@ const TopicProgress = () => {
     } finally {
       setLoading(false);
     }
+  }, []);
+
+  useEffect(() => {
+    fetchTopicsProgress();
+  }, [fetchTopicsProgress]);
+
+  const handleOpenMilestoneDialog = (index) => {
+    setCurrentMilestoneIndex(index);
+    setMilestoneNotes(selectedTopic.milestones[index]?.notes || "");
+    setSelectedFile(null);
+    setOpenMilestoneDialog(true);
   };
 
-  const handleUpdateMilestone = async (milestoneIndex) => {
-    try {
-      if (!selectedTopic) return;
+  const handleCloseMilestoneDialog = () => {
+    setOpenMilestoneDialog(false);
+    setCurrentMilestoneIndex(null);
+    setMilestoneNotes("");
+    setSelectedFile(null);
+  };
 
-      const response = await axios.put(
-        `/api/student/topics/${selectedTopic._id}/milestones/${milestoneIndex}`,
-        {
-          notes: "Cập nhật tiến độ hoàn thành mốc thời gian",
-        },
+  const handleConfirmMilestoneUpdate = async () => {
+    try {
+      if (!selectedTopic || currentMilestoneIndex === null) return;
+
+      const formData = new FormData();
+      formData.append(
+        "notes",
+        milestoneNotes || "Cập nhật tiến độ hoàn thành mốc thời gian",
       );
 
+      if (selectedFile) {
+        formData.append("report", selectedFile);
+      }
+
+      setUploading(true);
+      let endpointURL = `/api/student/topics/${selectedTopic._id}/milestones/${currentMilestoneIndex}`;
+      let axiosMethod = axios.put;
+
+      // Ensure the endpoint logic matches Backend expectation for uploading attachments.
+      // Based on previous search, the regular PUT endpoint for milestones handles files if uploaded via multipart/form-data.
+
+      const response = await axiosMethod(endpointURL, formData, {
+        headers: {
+          "Content-Type": "multipart/form-data",
+        },
+      });
+
       if (response.data.success) {
-        toast.success("Đã hoàn thành mốc thời gian này! 🎉");
+        toast.success("Đã nộp bài cho mốc thời gian này! 🎉");
+        handleCloseMilestoneDialog();
         fetchTopicsProgress();
       }
     } catch (error) {
       console.error("Update milestone error:", error);
-      toast.error(
-        error.response?.data?.message || "Không thể cập nhật tiến độ",
-      );
+      toast.error(error.response?.data?.message || "Không thể nộp bài");
+    } finally {
+      setUploading(false);
     }
   };
 
-  const getProgressColor = (progress) => {
-    if (progress >= 100) return theme.palette.success.main;
-    if (progress >= 50) return theme.palette.primary.main;
-    return theme.palette.warning.main;
-  };
-
   const getMilestoneStatus = (milestone) => {
+    if (!milestone) return "pending";
     const now = new Date();
-    const dueDate = new Date(milestone.due_date);
+    const dueDate = milestone.due_date ? new Date(milestone.due_date) : null;
 
     if (milestone.status === "completed" || milestone.completed)
       return "completed";
-    if (now > dueDate) return "overdue";
+    if (dueDate && now > dueDate) return "overdue";
     return "in_progress";
+  };
+
+  // Safe color access
+  const primaryMain = theme.palette?.primary?.main || "#1976d2";
+  const successMain = theme.palette?.success?.main || "#2e7d32";
+  const errorMain = theme.palette?.error?.main || "#d32f2f";
+  const infoMain = theme.palette?.info?.main || "#0288d1";
+  const warningMain = theme.palette?.warning?.main || "#ed6c02";
+
+  const getProgressColor = (progress) => {
+    if (progress >= 100) return successMain;
+    if (progress >= 50) return primaryMain;
+    return warningMain;
   };
 
   const glassCardSx = {
     background: "rgba(255, 255, 255, 0.8)",
     backdropFilter: "blur(20px)",
-    borderRadius: "28px",
+    borderRadius: "20px",
     border: "1px solid rgba(255, 255, 255, 0.5)",
     boxShadow: "0 12px 40px rgba(0, 0, 0, 0.04)",
     transition: "all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275)",
+  };
+
+  const headerGradientSx = {
+    background: "linear-gradient(135deg, #0ea5e9 0%, #2563eb 100%)",
+    pt: 6,
+    pb: 12,
+    color: "white",
+    borderRadius: { xs: 0, md: "0 0 32px 32px" },
+    boxShadow: "0 10px 30px -10px rgba(37, 99, 235, 0.4)",
+    mb: -6,
+    position: "relative",
+    zIndex: 0,
   };
 
   if (loading) {
@@ -133,45 +191,41 @@ const TopicProgress = () => {
 
   return (
     <Box sx={{ bgcolor: "#F8FAFC", minHeight: "100vh", pb: 10 }}>
-      <Container maxWidth="xl">
-        {/* Header Section */}
-        <Box sx={{ py: 6 }}>
-          <Stack direction="row" spacing={2} alignItems="center" sx={{ mb: 1 }}>
-            <Box
-              sx={{
-                p: 1.5,
-                bgcolor: theme.palette.primary.main,
-                borderRadius: "16px",
-                color: "#fff",
-              }}
-            >
-              <FlagIcon />
-            </Box>
-            <Typography
-              variant="h3"
-              sx={{
-                fontWeight: 900,
-                color: "#1E293B",
-                letterSpacing: "-0.04em",
-              }}
-            >
-              Lộ trình dự án ✨
-            </Typography>
-          </Stack>
+      {/* Header */}
+      <Box sx={headerGradientSx}>
+        <Container maxWidth="xl">
+          <Typography
+            variant="h3"
+            fontWeight={800}
+            sx={{
+              display: "flex",
+              alignItems: "center",
+              gap: 2,
+              mb: 1.5,
+              letterSpacing: "-0.02em",
+            }}
+          >
+            Lộ trình dự án 🚀
+          </Typography>
           <Typography
             variant="h6"
-            sx={{ color: "#64748B", fontWeight: 400, ml: 8 }}
+            sx={{ opacity: 0.9, fontWeight: 400, maxWidth: "600px" }}
           >
             Theo dõi sát sao từng cột mốc để đảm bảo đồ án về đích đúng hạn.
           </Typography>
-        </Box>
+        </Container>
+      </Box>
 
+      <Container
+        maxWidth="xl"
+        sx={{ position: "relative", zIndex: 1, px: { xs: 2, md: 4 } }}
+      >
         {topics.length === 0 ? (
           <Paper
             sx={{
               p: 10,
               textAlign: "center",
-              borderRadius: "40px",
+              borderRadius: "24px",
               bgcolor: "#fff",
               border: "2px dashed #E2E8F0",
             }}
@@ -183,7 +237,13 @@ const TopicProgress = () => {
             <Button
               variant="contained"
               onClick={() => navigate("/student/topics")}
-              sx={{ mt: 4, borderRadius: "12px", px: 4 }}
+              sx={{
+                mt: 4,
+                borderRadius: "12px",
+                px: 4,
+                textTransform: "none",
+                fontWeight: 700,
+              }}
             >
               Tìm đề tài ngay
             </Button>
@@ -209,12 +269,12 @@ const TopicProgress = () => {
                       borderWidth: "2px",
                       borderColor:
                         selectedTopic?._id === topic._id
-                          ? theme.palette.primary.main
+                          ? primaryMain
                           : "transparent",
                       bgcolor:
                         selectedTopic?._id === topic._id
                           ? "#fff"
-                          : alpha("#fff", 0.6),
+                          : alpha("#ffffff", 0.6),
                       "&:hover": {
                         transform: "translateX(8px)",
                         bgcolor: "#fff",
@@ -230,7 +290,7 @@ const TopicProgress = () => {
                           mb: 2,
                           color:
                             selectedTopic?._id === topic._id
-                              ? theme.palette.primary.main
+                              ? primaryMain
                               : "#1E293B",
                         }}
                       >
@@ -248,7 +308,7 @@ const TopicProgress = () => {
                             sx={{
                               height: 6,
                               borderRadius: 3,
-                              bgcolor: alpha(theme.palette.primary.main, 0.1),
+                              bgcolor: alpha(primaryMain, 0.1),
                             }}
                           />
                         </Box>
@@ -277,7 +337,7 @@ const TopicProgress = () => {
                     sx={{
                       ...glassCardSx,
                       mb: 4,
-                      bgcolor: theme.palette.primary.main,
+                      bgcolor: primaryMain,
                       color: "#fff",
                     }}
                     elevation={10}
@@ -390,16 +450,16 @@ const TopicProgress = () => {
                                   justifyContent: "center",
                                   boxShadow:
                                     status === "completed"
-                                      ? `0 8px 20px ${alpha(theme.palette.success.main, 0.4)}`
+                                      ? `0 8px 20px ${alpha(successMain, 0.4)}`
                                       : status === "overdue"
-                                        ? `0 8px 20px ${alpha(theme.palette.error.main, 0.4)}`
-                                        : `0 8px 20px ${alpha(theme.palette.info.main, 0.4)}`,
+                                        ? `0 8px 20px ${alpha(errorMain, 0.4)}`
+                                        : `0 8px 20px ${alpha(infoMain, 0.4)}`,
                                   bgcolor:
                                     status === "completed"
-                                      ? theme.palette.success.main
+                                      ? successMain
                                       : status === "overdue"
-                                        ? theme.palette.error.main
-                                        : theme.palette.info.main,
+                                        ? errorMain
+                                        : infoMain,
                                   color: "#fff",
                                   zIndex: 2,
                                   transition: "0.3s",
@@ -420,7 +480,7 @@ const TopicProgress = () => {
                                     flexGrow: 1,
                                     bgcolor:
                                       status === "completed"
-                                        ? theme.palette.success.main
+                                        ? successMain
                                         : "#E2E8F0",
                                     opacity: status === "completed" ? 0.6 : 1,
                                     my: 1,
@@ -438,10 +498,10 @@ const TopicProgress = () => {
                                   p: 1,
                                   borderLeft: `6px solid ${
                                     status === "completed"
-                                      ? theme.palette.success.main
+                                      ? successMain
                                       : status === "overdue"
-                                        ? theme.palette.error.main
-                                        : theme.palette.info.main
+                                        ? errorMain
+                                        : infoMain
                                   }`,
                                   "&:hover": {
                                     transform: "translateY(-4px)",
@@ -485,7 +545,7 @@ const TopicProgress = () => {
                                             fontWeight: 700,
                                             color:
                                               status === "overdue"
-                                                ? theme.palette.error.main
+                                                ? errorMain
                                                 : "#94A3B8",
                                           }}
                                         >
@@ -509,25 +569,16 @@ const TopicProgress = () => {
                                         fontWeight: 800,
                                         bgcolor:
                                           status === "completed"
-                                            ? alpha(
-                                                theme.palette.success.main,
-                                                0.1,
-                                              )
+                                            ? alpha(successMain, 0.1)
                                             : status === "overdue"
-                                              ? alpha(
-                                                  theme.palette.error.main,
-                                                  0.1,
-                                                )
-                                              : alpha(
-                                                  theme.palette.info.main,
-                                                  0.1,
-                                                ),
+                                              ? alpha(errorMain, 0.1)
+                                              : alpha(infoMain, 0.1),
                                         color:
                                           status === "completed"
-                                            ? theme.palette.success.main
+                                            ? successMain
                                             : status === "overdue"
-                                              ? theme.palette.error.main
-                                              : theme.palette.info.main,
+                                              ? errorMain
+                                              : infoMain,
                                       }}
                                     />
                                   </Stack>
@@ -542,27 +593,188 @@ const TopicProgress = () => {
                                   >
                                     {milestone.description}
                                   </Typography>
-
-                                  {status !== "completed" && (
-                                    <Button
-                                      size="large"
-                                      variant="contained"
-                                      fullWidth
-                                      onClick={() =>
-                                        handleUpdateMilestone(index)
-                                      }
-                                      startIcon={<CheckCircleIcon />}
+                                  {milestone.notes && (
+                                    <Paper
+                                      elevation={0}
                                       sx={{
-                                        borderRadius: "14px",
-                                        py: 1.5,
-                                        fontWeight: 800,
-                                        boxShadow:
-                                          "0 8px 24px rgba(15, 98, 254, 0.2)",
-                                        textTransform: "none",
+                                        p: 1.5,
+                                        mt: 1.5,
+                                        bgcolor: alpha(
+                                          theme.palette.info.light,
+                                          0.1,
+                                        ),
+                                        borderRadius: "8px",
+                                        borderLeft: `3px solid ${theme.palette.info.main}`,
                                       }}
                                     >
-                                      Đã hoàn thành mốc này
-                                    </Button>
+                                      <Typography
+                                        variant="caption"
+                                        sx={{
+                                          fontWeight: 700,
+                                          display: "block",
+                                          color: theme.palette.info.main,
+                                          mb: 0.5,
+                                        }}
+                                      >
+                                        Ghi chú đã nộp:
+                                      </Typography>
+                                      <Typography
+                                        variant="body2"
+                                        color="textSecondary"
+                                      >
+                                        {milestone.notes}
+                                      </Typography>
+                                    </Paper>
+                                  )}
+
+                                  {/* Update Status Actions (All Milestones) */}
+                                  {status !== "completed" && (
+                                    <Stack spacing={2} sx={{ mb: 2 }}>
+                                      <Button
+                                        size="large"
+                                        variant="contained"
+                                        fullWidth
+                                        onClick={() =>
+                                          handleOpenMilestoneDialog(index)
+                                        }
+                                        startIcon={<UploadIcon />}
+                                        sx={{
+                                          borderRadius: "14px",
+                                          py: 1.5,
+                                          fontWeight: 800,
+                                          boxShadow:
+                                            "0 8px 24px rgba(15, 98, 254, 0.2)",
+                                          textTransform: "none",
+                                        }}
+                                      >
+                                        Nộp bài & Xác nhận hoàn thành
+                                      </Button>
+                                    </Stack>
+                                  )}
+
+                                  {/* Re-Submit (If completed and no explicit report button needed) */}
+                                  {status === "completed" &&
+                                    !(
+                                      isLast ||
+                                      (milestone.name || "")
+                                        .toLowerCase()
+                                        .includes("báo cáo")
+                                    ) && (
+                                      <Stack spacing={2} sx={{ mb: 2 }}>
+                                        <Button
+                                          size="medium"
+                                          variant="outlined"
+                                          fullWidth
+                                          onClick={() =>
+                                            handleOpenMilestoneDialog(index)
+                                          }
+                                          startIcon={<UploadIcon />}
+                                          sx={{
+                                            borderRadius: "14px",
+                                            py: 1,
+                                            fontWeight: 700,
+                                            textTransform: "none",
+                                          }}
+                                        >
+                                          Nộp lại tệp / Cập nhật ghi chú
+                                        </Button>
+                                      </Stack>
+                                    )}
+
+                                  {/* Update Final Report Button - Keeping explicit for clarity on final step */}
+                                  {((milestone.name || "")
+                                    .toLowerCase()
+                                    .includes("báo cáo") ||
+                                    isLast) && (
+                                    <Stack spacing={2} sx={{ mt: 2 }}>
+                                      <Button
+                                        size="large"
+                                        variant={
+                                          status === "completed"
+                                            ? "outlined"
+                                            : "contained"
+                                        }
+                                        fullWidth
+                                        disabled={uploading}
+                                        onClick={() =>
+                                          handleOpenMilestoneDialog(index)
+                                        }
+                                        startIcon={<UploadIcon />}
+                                        sx={{
+                                          borderRadius: "14px",
+                                          py: 1.5,
+                                          fontWeight: 800,
+                                          boxShadow:
+                                            status !== "completed"
+                                              ? "0 8px 16px rgba(15, 98, 254, 0.15)"
+                                              : "none",
+                                          textTransform: "none",
+                                        }}
+                                      >
+                                        {status === "completed"
+                                          ? "Nộp lại báo cáo cuối kỳ"
+                                          : "Nộp báo cáo cuối kỳ"}
+                                      </Button>
+                                    </Stack>
+                                  )}
+
+                                  {/* Download Link if attachments exist (either milestone attachments or topic_final_report) */}
+                                  {(milestone.attachments?.length > 0 ||
+                                    (((milestone.name || "")
+                                      .toLowerCase()
+                                      .includes("báo cáo") ||
+                                      isLast) &&
+                                      selectedTopic.topic_final_report)) && (
+                                    <Box sx={{ mt: 3 }}>
+                                      <Typography
+                                        variant="caption"
+                                        sx={{
+                                          fontWeight: 700,
+                                          color: "#94A3B8",
+                                          display: "block",
+                                          mb: 1,
+                                        }}
+                                      >
+                                        Tệp đính kèm:
+                                      </Typography>
+                                      {milestone.attachments?.length > 0 ? (
+                                        milestone.attachments.map(
+                                          (att, idx) => (
+                                            <Button
+                                              key={idx}
+                                              size="small"
+                                              variant="outlined"
+                                              href={`http://localhost:5000${att}`}
+                                              target="_blank"
+                                              startIcon={<UploadIcon />}
+                                              sx={{
+                                                borderRadius: "10px",
+                                                textTransform: "none",
+                                                mb: 1,
+                                                mr: 1,
+                                              }}
+                                            >
+                                              Xem báo cáo đã nộp
+                                            </Button>
+                                          ),
+                                        )
+                                      ) : (
+                                        <Button
+                                          size="small"
+                                          variant="outlined"
+                                          href={`http://localhost:5000${selectedTopic.topic_final_report}`}
+                                          target="_blank"
+                                          startIcon={<UploadIcon />}
+                                          sx={{
+                                            borderRadius: "10px",
+                                            textTransform: "none",
+                                            mb: 1,
+                                          }}
+                                        >
+                                          Xem báo cáo đã nộp
+                                        </Button>
+                                      )}
+                                    </Box>
                                   )}
                                 </CardContent>
                               </Card>
@@ -634,6 +846,75 @@ const TopicProgress = () => {
           </Grid>
         )}
       </Container>
+
+      {/* Update Milestone Dialog */}
+      <Dialog
+        open={openMilestoneDialog}
+        onClose={handleCloseMilestoneDialog}
+        maxWidth="sm"
+        fullWidth
+        PaperProps={{
+          style: { borderRadius: "16px" },
+        }}
+      >
+        <DialogTitle sx={{ fontWeight: 800 }}>
+          Tóm Tắt Công Việc Giai Đoạn
+        </DialogTitle>
+        <DialogContent dividers>
+          <Box sx={{ display: "flex", flexDirection: "column", gap: 3, pt: 1 }}>
+            <Typography variant="body2" color="textSecondary">
+              Vui lòng đính kèm tệp tài liệu (Zip, PDF, Word...) và viết ngắn
+              gọn những công việc bạn hoặc nhóm đã hoàn thành trong giai đoạn
+              này để báo cáo với Giảng viên.
+            </Typography>
+
+            <Box>
+              <Typography variant="subtitle2" sx={{ fontWeight: 600, mb: 1 }}>
+                Tệp đính kèm (Tuỳ chọn)
+              </Typography>
+              <Button
+                component="label"
+                variant="outlined"
+                fullWidth
+                startIcon={<UploadIcon />}
+                sx={{ p: 2, borderStyle: "dashed", borderRadius: "12px" }}
+              >
+                {selectedFile
+                  ? selectedFile.name
+                  : "Nhấp để chọn tệp tải lên (Tối đa 20MB)"}
+                <input
+                  type="file"
+                  hidden
+                  onChange={(e) => setSelectedFile(e.target.files[0])}
+                />
+              </Button>
+            </Box>
+
+            <TextField
+              fullWidth
+              multiline
+              rows={4}
+              label="Ghi chú hoàn thành"
+              placeholder="VD: Nhóm đã làm xong chức năng đăng nhập, đăng ký và đính kèm source code..."
+              value={milestoneNotes}
+              onChange={(e) => setMilestoneNotes(e.target.value)}
+            />
+          </Box>
+        </DialogContent>
+        <DialogActions sx={{ p: 2 }}>
+          <Button onClick={handleCloseMilestoneDialog} disabled={uploading}>
+            Hủy bỏ
+          </Button>
+          <Button
+            onClick={handleConfirmMilestoneUpdate}
+            variant="contained"
+            disabled={uploading}
+            sx={{ borderRadius: "8px", px: 3, fontWeight: "bold" }}
+          >
+            {uploading ? "Đang xử lý..." : "Nộp Tiến Độ"}
+          </Button>
+        </DialogActions>
+      </Dialog>
     </Box>
   );
 };

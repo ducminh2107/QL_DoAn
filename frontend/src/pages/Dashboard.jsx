@@ -101,7 +101,7 @@ const Dashboard = () => {
           {getWelcomeMessage()}, {user?.user_name}!
         </Typography>
         <Typography variant="body1">
-          Chào mừng bạn đến với Hệ thống Quản lý Luận văn. Vai trò:{" "}
+          Chào mừng bạn đến với Hệ thống Quản lý Đồ án Tốt nghiệp. Vai trò:{" "}
           <strong>{getRoleDisplay()}</strong> | Mã:{" "}
           <strong>{user?.user_id}</strong>
         </Typography>
@@ -141,7 +141,10 @@ const Dashboard = () => {
                 <Box>
                   <Typography variant="h6">Khoa/Viện</Typography>
                   <Typography variant="h5">
-                    {user?.user_faculty || "Chưa cập nhật"}
+                    {user?.user_faculty?.faculty_title ||
+                      (typeof user?.user_faculty === "string"
+                        ? user?.user_faculty
+                        : "Chưa cập nhật")}
                   </Typography>
                 </Box>
               </Box>
@@ -157,7 +160,10 @@ const Dashboard = () => {
                 <Box>
                   <Typography variant="h6">Chuyên ngành</Typography>
                   <Typography variant="h5">
-                    {user?.user_major || "Chưa cập nhật"}
+                    {user?.user_major?.major_title ||
+                      (typeof user?.user_major === "string"
+                        ? user?.user_major
+                        : "Chưa cập nhật")}
                   </Typography>
                 </Box>
               </Box>
@@ -206,7 +212,7 @@ const Dashboard = () => {
           ℹ️ Thông tin hệ thống
         </Typography>
         <Typography variant="body2" color="text.secondary" paragraph>
-          • Hệ thống Quản lý Luận văn - Phiên bản 1.0
+          • Hệ thống Quản lý Đồ án Tốt nghiệp - Phiên bản 1.0
         </Typography>
         <Typography variant="body2" color="text.secondary" paragraph>
           • Tài khoản được cung cấp bởi Nhà trường

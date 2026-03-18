@@ -20,7 +20,7 @@ const topicValidation = {
         'any.required': 'Danh mục là bắt buộc',
       }),
     topic_max_members: Joi.number().min(1).max(5).default(1),
-    topic_advisor_request: Joi.string().max(1000),
+    topic_advisor_request: Joi.string().max(1000).allow(''),
   }),
 
   // Topic registration validation

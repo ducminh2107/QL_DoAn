@@ -15,7 +15,8 @@ const systemLogSchema = new mongoose.Schema(
       type: mongoose.Schema.Types.ObjectId,
     },
     user_id: {
-      type: String,
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'User',
     },
     changes: {
       type: mongoose.Schema.Types.Mixed,

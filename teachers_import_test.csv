@@ -1,0 +1,11 @@
+user_id,user_name,email,user_phone,role,user_title,user_gender,user_department,user_CCCD,user_permanent_address
+GV001,TS. Nguyễn Xuân,gv001@edu.vn,0988000001,teacher,Tiến sĩ,Nam,Kỹ thuật phần mềm,079112345671,Hà Nội
+GV002,ThS. Lê Thu,gv002@edu.vn,0988000002,teacher,Thạc sĩ,Nữ,Mạng máy tính,079112345672,Hải Phòng
+GV003,TS. Trần Đông,gv003@edu.vn,0988000003,teacher,Tiến sĩ,Nam,Trí tuệ nhân tạo,079112345673,Lào Cai
+GV004,PGS.TS. Phạm Hạ,gv004@edu.vn,0988000004,teacher,PGS.TS,Nữ,Khoa học máy tính,079112345674,Nam Định
+GV005,ThS. Vũ Ngọc,gv005@edu.vn,0988000005,teacher,Thạc sĩ,Nam,Kỹ thuật phần mềm,079112345675,Thanh Hóa
+GV006,TS. Hoàng Minh,gv006@edu.vn,0988000006,teacher,Tiến sĩ,Nam,Trí tuệ nhân tạo,079112345676,Nam Định
+GV007,ThS. Đặng Hùng,gv007@edu.vn,0988000007,teacher,Thạc sĩ,Nam,An toàn thông tin,079112345677,Thái Bình
+GV008,TS. Bùi Châu,gv008@edu.vn,0988000008,teacher,Tiến sĩ,Nữ,Thiết kế đồ họa,079112345678,Hưng Yên
+GV009,ThS. Đỗ Quang,gv009@edu.vn,0988000009,teacher,Thạc sĩ,Nam,An toàn thông tin,079112345679,Ninh Bình
+GV010,TS. Hồ Dũng,gv010@edu.vn,0988000010,teacher,Tiến sĩ,Nam,Hệ thống thông tin,079112345680,Hà Nam

@@ -43,7 +43,7 @@ exports.updateSettings = async (req, res) => {
     await SystemLog.create({
       action: 'UPDATE_SYSTEM_SETTINGS',
       collection_name: 'systemsettings',
-      user_id: req.user.user_id,
+      user_id: req.user.id,
       changes: updateData,
       ip_address: req.ip,
     });
@@ -104,7 +104,7 @@ exports.updateSetting = async (req, res) => {
     await SystemLog.create({
       action: 'UPDATE_SETTING',
       collection_name: 'systemsettings',
-      user_id: req.user.user_id,
+      user_id: req.user.id,
       changes: { key, value },
       ip_address: req.ip,
     });

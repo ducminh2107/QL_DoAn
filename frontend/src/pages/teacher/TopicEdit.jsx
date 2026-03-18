@@ -11,6 +11,8 @@ import {
   Select,
   MenuItem,
   CircularProgress,
+  Grid,
+  Stack,
 } from "@mui/material";
 import {
   ArrowBack as ArrowBackIcon,
@@ -48,8 +50,8 @@ const TopicEdit = () => {
   const loadTopic = async () => {
     try {
       setLoading(true);
-      const response = await axios.get(`/api/teacher/topics`);
-      const foundTopic = response.data.data?.find((t) => t._id === id);
+      const response = await axios.get(`/api/teacher/topics/${id}`);
+      const foundTopic = response.data.data;
       if (foundTopic) {
         setTopic({
           topic_title: foundTopic.topic_title || "",

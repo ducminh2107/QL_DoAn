@@ -135,19 +135,6 @@ const handleRegistration = async (req, res, next) => {
     topic.topic_group_student[studentIndex].status =
       action === 'approve' ? 'approved' : 'rejected';
 
-    const studentUser =
-      await User.findById(studentId).select('user_id user_name');
-    if (studentUser) {
-      if (!topic.topic_group_student[studentIndex].student_id) {
-        topic.topic_group_student[studentIndex].student_id =
-          studentUser.user_id;
-      }
-      if (!topic.topic_group_student[studentIndex].student_name) {
-        topic.topic_group_student[studentIndex].student_name =
-          studentUser.user_name;
-      }
-    }
-
     // If approving, check if this makes the topic have a leader
     if (action === 'approve' && topic.topic_leader_status === 'pending') {
       topic.topic_leader_status = 'approved';
@@ -179,14 +166,11 @@ const handleRegistration = async (req, res, next) => {
       }
     }
 
-    const studentUserForNotification =
-      await User.findById(studentId).select('user_id');
-
     // Create notification
     await Notification.create({
       user_notification_title: `Đăng ký đề tài "${topic.topic_title}" đã được ${action === 'approve' ? 'chấp nhận' : 'từ chối'}`,
-      user_notification_sender: teacherUserId,
-      user_notification_recipient: studentUserForNotification?.user_id || '',
+      user_notification_sender: teacherId,
+      user_notification_recipient: studentId,
       user_notification_content:
         feedback ||
         `Giảng viên đã ${action === 'approve' ? 'chấp nhận' : 'từ chối'} đăng ký của bạn.`,
@@ -253,8 +237,8 @@ const removeStudentFromTopic = async (req, res, next) => {
     // Create notification
     await Notification.create({
       user_notification_title: `Bạn đã bị xóa khỏi đề tài "${topic.topic_title}"`,
-      user_notification_sender: teacherUserId,
-      user_notification_recipient: studentUser?.user_id || '',
+      user_notification_sender: teacherId,
+      user_notification_recipient: studentId,
       user_notification_content: reason || 'Giảng viên đã xóa bạn khỏi đề tài.',
       user_notification_type: 'system',
     });
@@ -284,11 +268,15 @@ const getGuidedStudents = async (req, res, next) => {
       topic_teacher_status: 'approved',
       'topic_group_student.status': 'approved',
     })
-      .populate(
-        'topic_group_student.student',
-        'user_name user_id email user_phone user_major user_average_grade'
-      )
-      .select('topic_title topic_max_members topic_group_student');
+      .populate({
+        path: 'topic_group_student.student',
+        select: 'user_name user_id email user_phone user_major user_average_grade user_status user_department user_faculty',
+        populate: [
+          { path: 'user_faculty', select: 'faculty_title' },
+          { path: 'user_major', select: 'major_title' }
+        ]
+      })
+      .select('topic_title topic_max_members topic_group_student milestones');
 
     // Format data
     const guidedStudents = topics.reduce((acc, topic) => {
@@ -296,14 +284,30 @@ const getGuidedStudents = async (req, res, next) => {
         (member) => member.status === 'approved'
       );
 
+      let completedMilestones = 0;
+      let progressPercentage = 0;
+      if (topic.milestones && topic.milestones.length > 0) {
+        completedMilestones = topic.milestones.filter(
+          (m) => m.status === 'completed'
+        ).length;
+        progressPercentage = Math.round(
+          (completedMilestones / topic.milestones.length) * 100
+        );
+      }
+
       approvedStudents.forEach((member) => {
-        acc.push({
-          topic_id: topic._id,
-          topic_title: topic.topic_title,
-          topic_max_members: topic.topic_max_members,
-          ...member.student._doc,
-          joined_at: member.joined_at,
-        });
+        if (member.student) {
+          acc.push({
+            topic_id: topic._id,
+            topic_title: topic.topic_title,
+            topic_max_members: topic.topic_max_members,
+            progress: progressPercentage,
+            ...member.student._doc,
+            user_faculty: member.student.user_faculty?.faculty_title || '',
+            user_major: member.student.user_major?.major_title || '',
+            joined_at: member.joined_at,
+          });
+        }
       });
 
       return acc;

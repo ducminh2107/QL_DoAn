@@ -15,14 +15,15 @@ const scoreboardSchema = new mongoose.Schema(
       ref: 'Topic',
     },
     grader: {
-      type: String,
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'User',
     },
     student_id: {
       type: String,
     },
     rubric_student_evaluations: [
       {
-        criteria_id: Number,
+        criteria_id: String,
         criteria_name: String,
         score: Number,
         comment: String,
@@ -32,6 +33,7 @@ const scoreboardSchema = new mongoose.Schema(
     ],
     total_score: Number,
     student_grades: String,
+    comments: String,
   },
   {
     timestamps: { createdAt: 'created_at', updatedAt: 'updated_at' },

@@ -12,7 +12,7 @@ import {
   InputAdornment,
   IconButton
 } from '@mui/material';
-import { Lock, Visibility, VisibilityOff, CheckCircle } from '@mui/icons-material';
+import { Lock, Visibility, VisibilityOff, CheckCircle, ArrowBack } from '@mui/icons-material';
 import { useForm } from 'react-hook-form';
 import { yupResolver } from '@hookform/resolvers/yup';
 import * as yup from 'yup';
@@ -66,131 +66,180 @@ const ResetPassword = () => {
 
   if (!token) {
     return (
-      <Container>
-        <Alert severity="error">
-          Liên kết đặt lại mật khẩu không hợp lệ.
-        </Alert>
-      </Container>
+      <Box
+        sx={{
+          minHeight: "100vh",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          backgroundImage:
+            'url("https://thoibaotaichinhvietnam.vn/stores/news_dataimages/2024/102024/22/17/a-dh-tdm20241022171319.jpg?rt=20241022171323")',
+          backgroundSize: "cover",
+          backgroundPosition: "center",
+        }}
+      >
+        <Container maxWidth="xs">
+          <Alert severity="error" sx={{ borderRadius: 2 }}>
+            Liên kết đặt lại mật khẩu không hợp lệ. Vui lòng thử lại.
+          </Alert>
+          <Box sx={{ textAlign: "center", mt: 2 }}>
+            <Button variant="contained" onClick={() => navigate("/login")}>
+              Quay lại đăng nhập
+            </Button>
+          </Box>
+        </Container>
+      </Box>
     );
   }
 
   return (
-    <Container component="main" maxWidth="sm">
-      <Box
-        sx={{
-          marginTop: 8,
-          display: 'flex',
-          flexDirection: 'column',
-          alignItems: 'center',
-        }}
-      >
-        {success ? (
-          <Paper sx={{ p: 4, width: '100%', textAlign: 'center' }}>
-            <CheckCircle sx={{ fontSize: 60, color: 'success.main', mb: 2 }} />
-            <Typography variant="h5" gutterBottom>
-              ✅ Đặt lại mật khẩu thành công!
-            </Typography>
-            <Typography variant="body1" color="text.secondary" paragraph>
-              Mật khẩu của bạn đã được thay đổi thành công.
-            </Typography>
-            <Alert severity="info" sx={{ mt: 2 }}>
-              Bạn sẽ được chuyển hướng đến trang đăng nhập sau 3 giây...
-            </Alert>
-            <Button
-              variant="contained"
-              onClick={() => navigate('/login')}
-              sx={{ mt: 3 }}
-            >
-              Đến trang đăng nhập ngay
-            </Button>
-          </Paper>
-        ) : (
-          <Paper sx={{ p: 4, width: '100%' }}>
-            <Typography component="h1" variant="h5" align="center" gutterBottom>
-              🔄 Đặt lại mật khẩu
-            </Typography>
-            
-            <Alert severity="warning" sx={{ mb: 3 }}>
-              <Typography variant="body2">
-                <strong>Lưu ý:</strong> Liên kết đặt lại mật khẩu chỉ có hiệu lực trong 10 phút.
+    <Box
+      sx={{
+        minHeight: "100vh",
+        width: "100vw",
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+        px: { xs: 2, sm: 3 },
+        py: { xs: 4, sm: 6 },
+        backgroundImage:
+          'url("https://thoibaotaichinhvietnam.vn/stores/news_dataimages/2024/102024/22/17/a-dh-tdm20241022171319.jpg?rt=20241022171323")',
+        backgroundSize: "cover",
+        backgroundPosition: "center",
+        backgroundRepeat: "no-repeat",
+      }}
+    >
+      <Container component="main" maxWidth="sm">
+        <Box
+          sx={{
+            display: "flex",
+            flexDirection: "column",
+            alignItems: "center",
+          }}
+        >
+          <Button
+            startIcon={<ArrowBack />}
+            onClick={() => navigate("/login")}
+            sx={{ alignSelf: "flex-start", mb: 2, color: "white" }}
+          >
+            Quay lại đăng nhập
+          </Button>
+
+          {success ? (
+            <Paper sx={{ p: 4, width: '100%', textAlign: 'center', borderRadius: 3 }}>
+              <CheckCircle sx={{ fontSize: 60, color: 'success.main', mb: 2 }} />
+              <Typography variant="h5" gutterBottom sx={{ fontWeight: 700 }}>
+                ✅ Đặt lại mật khẩu thành công!
               </Typography>
-            </Alert>
-
-            <Box component="form" onSubmit={handleSubmit(onSubmit)}>
-              <TextField
-                margin="normal"
-                fullWidth
-                label="Mật khẩu mới"
-                type={showPassword ? 'text' : 'password'}
-                {...register('password')}
-                error={!!errors.password}
-                helperText={errors.password?.message}
-                disabled={loading}
-                InputProps={{
-                  startAdornment: (
-                    <InputAdornment position="start">
-                      <Lock />
-                    </InputAdornment>
-                  ),
-                  endAdornment: (
-                    <InputAdornment position="end">
-                      <IconButton
-                        onClick={() => setShowPassword(!showPassword)}
-                        edge="end"
-                      >
-                        {showPassword ? <VisibilityOff /> : <Visibility />}
-                      </IconButton>
-                    </InputAdornment>
-                  )
-                }}
-              />
-
-              <TextField
-                margin="normal"
-                fullWidth
-                label="Xác nhận mật khẩu"
-                type={showConfirmPassword ? 'text' : 'password'}
-                {...register('confirmPassword')}
-                error={!!errors.confirmPassword}
-                helperText={errors.confirmPassword?.message}
-                disabled={loading}
-                InputProps={{
-                  startAdornment: (
-                    <InputAdornment position="start">
-                      <Lock />
-                    </InputAdornment>
-                  ),
-                  endAdornment: (
-                    <InputAdornment position="end">
-                      <IconButton
-                        onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                        edge="end"
-                      >
-                        {showConfirmPassword ? <VisibilityOff /> : <Visibility />}
-                      </IconButton>
-                    </InputAdornment>
-                  )
-                }}
-              />
-
+              <Typography variant="body1" color="text.secondary" paragraph>
+                Mật khẩu của bạn đã được thay đổi thành công.
+              </Typography>
+              <Alert severity="info" sx={{ mt: 2 }}>
+                Bạn sẽ được chuyển hướng đến trang đăng nhập sau 3 giây...
+              </Alert>
               <Button
-                type="submit"
-                fullWidth
                 variant="contained"
-                sx={{ mt: 3, mb: 2 }}
-                disabled={loading}
+                onClick={() => navigate('/login')}
+                sx={{ mt: 3, fontWeight: 700 }}
               >
-                {loading ? (
-                  <CircularProgress size={24} color="inherit" />
-                ) : (
-                  'ĐẶT LẠI MẬT KHẨU'
-                )}
+                Đến trang đăng nhập ngay
               </Button>
-            </Box>
-          </Paper>
-        )}
-      </Box>
-    </Container>
+            </Paper>
+          ) : (
+            <Paper sx={{ p: 4, width: '100%', borderRadius: 3 }}>
+              <Typography component="h1" variant="h5" align="center" gutterBottom sx={{ fontWeight: 700 }}>
+                🔄 Đặt lại mật khẩu
+              </Typography>
+
+              <Alert severity="warning" sx={{ mb: 3 }}>
+                <Typography variant="body2">
+                  <strong>Lưu ý:</strong> Liên kết đặt lại mật khẩu chỉ có hiệu lực trong 10 phút.
+                </Typography>
+              </Alert>
+
+              <Box component="form" onSubmit={handleSubmit(onSubmit)}>
+                <TextField
+                  margin="normal"
+                  fullWidth
+                  label="Mật khẩu mới"
+                  type={showPassword ? 'text' : 'password'}
+                  {...register('password')}
+                  error={!!errors.password}
+                  helperText={errors.password?.message}
+                  disabled={loading}
+                  InputProps={{
+                    startAdornment: (
+                      <InputAdornment position="start">
+                        <Lock />
+                      </InputAdornment>
+                    ),
+                    endAdornment: (
+                      <InputAdornment position="end">
+                        <IconButton
+                          onClick={() => setShowPassword(!showPassword)}
+                          edge="end"
+                        >
+                          {showPassword ? <VisibilityOff /> : <Visibility />}
+                        </IconButton>
+                      </InputAdornment>
+                    )
+                  }}
+                />
+
+                <TextField
+                  margin="normal"
+                  fullWidth
+                  label="Xác nhận mật khẩu"
+                  type={showConfirmPassword ? 'text' : 'password'}
+                  {...register('confirmPassword')}
+                  error={!!errors.confirmPassword}
+                  helperText={errors.confirmPassword?.message}
+                  disabled={loading}
+                  InputProps={{
+                    startAdornment: (
+                      <InputAdornment position="start">
+                        <Lock />
+                      </InputAdornment>
+                    ),
+                    endAdornment: (
+                      <InputAdornment position="end">
+                        <IconButton
+                          onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                          edge="end"
+                        >
+                          {showConfirmPassword ? <VisibilityOff /> : <Visibility />}
+                        </IconButton>
+                      </InputAdornment>
+                    )
+                  }}
+                />
+
+                <Button
+                  type="submit"
+                  fullWidth
+                  variant="contained"
+                  size="large"
+                  sx={{ mt: 3, mb: 2, py: 1.5, fontWeight: 700 }}
+                  disabled={loading}
+                >
+                  {loading ? (
+                    <CircularProgress size={24} color="inherit" />
+                  ) : (
+                    'ĐẶT LẠI MẬT KHẨU'
+                  )}
+                </Button>
+              </Box>
+            </Paper>
+          )}
+
+          <Box sx={{ mt: 3, textAlign: "center" }}>
+            <Typography variant="body2" sx={{ color: "rgba(255,255,255,0.8)" }}>
+              © {new Date().getFullYear()} Hệ Thống Quản Lý Đề Tài
+            </Typography>
+          </Box>
+        </Box>
+      </Container>
+    </Box>
   );
 };
 

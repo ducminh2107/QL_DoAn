@@ -21,15 +21,21 @@ import {
   DialogContent,
   DialogActions,
 } from "@mui/material";
-import { Visibility as ViewIcon, Info as InfoIcon } from "@mui/icons-material";
+import {
+  Visibility as ViewIcon,
+  Info as InfoIcon,
+  Grade as GradeIcon,
+} from "@mui/icons-material";
 import axios from "axios";
 import toast from "react-hot-toast";
+import { useNavigate } from "react-router-dom";
 
 const CouncilParticipation = () => {
   const [councils, setCouncils] = useState([]);
   const [loading, setLoading] = useState(true);
   const [selectedCouncil, setSelectedCouncil] = useState(null);
   const [openDialog, setOpenDialog] = useState(false);
+  const navigate = useNavigate();
 
   useEffect(() => {
     fetchCouncils();
@@ -329,6 +335,81 @@ const CouncilParticipation = () => {
                     ))}
                   </Box>
                 )}
+
+              {/* Đề tài trong hội đồng */}
+              {selectedCouncil.topics && selectedCouncil.topics.length > 0 && (
+                <Box>
+                  <Typography
+                    variant="subtitle2"
+                    sx={{ fontWeight: 600, mb: 1, mt: 1 }}
+                  >
+                    Đề Tài Bảo Vệ ({selectedCouncil.topics.length})
+                  </Typography>
+                  <Box display="flex" flexDirection="column" gap={1}>
+                    {selectedCouncil.topics.map((topic) => (
+                      <Paper
+                        key={topic._id}
+                        variant="outlined"
+                        sx={{
+                          p: 1.5,
+                          display: "flex",
+                          justifyContent: "space-between",
+                          alignItems: "center",
+                          bgcolor: "#f8fafc",
+                        }}
+                      >
+                        <Box>
+                          <Typography
+                            variant="body2"
+                            sx={{ fontWeight: 600, color: "#1e293b" }}
+                          >
+                            {topic.topic_title}
+                          </Typography>
+                          <Chip
+                            label={
+                              topic.grading_status === "graded"
+                                ? "Đã chấm điểm"
+                                : "Chưa chấm"
+                            }
+                            color={
+                              topic.grading_status === "graded"
+                                ? "success"
+                                : "warning"
+                            }
+                            size="small"
+                            sx={{ mt: 0.5, height: 20, fontSize: "0.7rem" }}
+                          />
+                        </Box>
+                        <Button
+                          size="small"
+                          variant="contained"
+                          color={
+                            topic.grading_status === "graded"
+                              ? "success"
+                              : "primary"
+                          }
+                          startIcon={<GradeIcon />}
+                          onClick={() => {
+                            // Link sang trang Grading nhưng với tag là Assembly
+                            // Ta có thể truyền state hoặc dùng URL params
+                            navigate("/teacher/grading", {
+                              state: {
+                                directOpenTopicId: topic._id,
+                                asCouncilType: "assembly",
+                              },
+                            });
+                          }}
+                          sx={{ textTransform: "none", boxShadow: "none" }}
+                        >
+                          {topic.grading_status === "graded"
+                            ? "Xem Điểm"
+                            : "Chấm Điểm"}
+                        </Button>
+                      </Paper>
+                    ))}
+                  </Box>
+                </Box>
+              )}
 
               {selectedCouncil.description && (
                 <Box>

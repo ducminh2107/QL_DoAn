@@ -1,16 +1,34 @@
 const User = require('../models/User');
 
 const getMe = async (req, res) => {
-  res.status(200).json({ success: true, data: req.user });
+  res.status(200).json({ success: true, data: { user: req.user } });
 };
 
-const updateProfile = async (req, res) => {
-  res.status(200).json({ success: true, message: 'Update profile' });
+const updateProfile = async (req, res, next) => {
+  try {
+    const updatedUser = await User.findByIdAndUpdate(
+      req.user.id,
+      { $set: req.body },
+      { new: true, runValidators: true }
+    ).select('-password');
+    res.status(200).json({
+      success: true,
+      data: {
+        user: updatedUser,
+      },
+      message: 'Cập nhật thành công',
+    });
+  } catch (error) {
+    next(error);
+  }
 };
 
 const getAllUsers = async (req, res, next) => {
   try {
-    const users = await User.find().select('-password');
+    const users = await User.find()
+      .select('-password')
+      .populate('user_faculty', 'faculty_title')
+      .populate('user_major', 'major_title');
     res.status(200).json({ success: true, count: users.length, data: users });
   } catch (error) {
     next(error);
@@ -109,6 +127,7 @@ const createUser = async (req, res, next) => {
       user_faculty,
       user_major,
       user_phone,
+      user_title,
     } = req.body;
 
     // Check if user already exists
@@ -134,6 +153,7 @@ const createUser = async (req, res, next) => {
       password: userPassword,
       user_name,
       role: role || 'student',
+      user_title: role === 'teacher' ? user_title : '',
       user_faculty,
       user_major,
       user_phone,

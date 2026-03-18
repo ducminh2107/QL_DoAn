@@ -33,6 +33,7 @@ import toast from "react-hot-toast";
 
 const ScheduleManagement = () => {
   const [schedules, setSchedules] = useState([]);
+  const [councils, setCouncils] = useState([]);
   const [loading, setLoading] = useState(true);
   const [openDialog, setOpenDialog] = useState(false);
   const [editingSchedule, setEditingSchedule] = useState(null);
@@ -42,11 +43,23 @@ const ScheduleManagement = () => {
     start_date: "",
     end_date: "",
     status: "scheduled",
+    council_id: "",
+    location: "",
   });
 
   useEffect(() => {
     fetchSchedules();
+    fetchCouncils();
   }, []);
+
+  const fetchCouncils = async () => {
+    try {
+      const res = await axios.get("/api/admin/councils");
+      setCouncils(res.data.data.councils || []);
+    } catch (e) {
+      console.error("Error fetching councils", e);
+    }
+  };
 
   const fetchSchedules = async () => {
     try {
@@ -67,7 +80,13 @@ const ScheduleManagement = () => {
   const handleOpenDialog = (schedule = null) => {
     if (schedule) {
       setEditingSchedule(schedule);
-      setFormData(schedule);
+      setFormData({
+        ...schedule,
+        start_date: schedule.start_date ? schedule.start_date.slice(0, 16) : "",
+        end_date: schedule.end_date ? schedule.end_date.slice(0, 16) : "",
+        council_id: schedule.council_id?._id || "",
+        location: schedule.location || "",
+      });
     } else {
       setEditingSchedule(null);
       setFormData({
@@ -76,6 +95,8 @@ const ScheduleManagement = () => {
         start_date: "",
         end_date: "",
         status: "scheduled",
+        council_id: "",
+        location: "",
       });
     }
     setOpenDialog(true);
@@ -105,7 +126,7 @@ const ScheduleManagement = () => {
       }
       handleCloseDialog();
       fetchSchedules();
-    } catch (error) {
+    } catch {
       toast.error("Lỗi lưu lịch");
     }
   };
@@ -116,7 +137,7 @@ const ScheduleManagement = () => {
         await axios.delete(`/api/admin/schedules/${scheduleId}`);
         toast.success("Xóa lịch thành công");
         fetchSchedules();
-      } catch (error) {
+      } catch {
         toast.error("Lỗi xóa lịch");
       }
     }
@@ -226,6 +247,9 @@ const ScheduleManagement = () => {
                     <TableRow sx={{ backgroundColor: "#f5f5f5" }}>
                       <TableCell sx={{ fontWeight: 600 }}>Tên Lịch</TableCell>
                       <TableCell sx={{ fontWeight: 600 }}>
+                        Hội Đồng & Địa Điểm
+                      </TableCell>
+                      <TableCell sx={{ fontWeight: 600 }}>
                         Ngày Bắt Đầu
                       </TableCell>
                       <TableCell sx={{ fontWeight: 600 }}>
@@ -254,14 +278,28 @@ const ScheduleManagement = () => {
                           </Box>
                         </TableCell>
                         <TableCell>
-                          {new Date(schedule.start_date).toLocaleDateString(
+                          <Box>
+                            <Typography
+                              variant="body2"
+                              sx={{ fontWeight: 500 }}
+                            >
+                              {schedule.council_id?.council_name ||
+                                "Chưa gắn hội đồng"}
+                            </Typography>
+                            <Typography variant="caption" color="textSecondary">
+                              {schedule.location
+                                ? `P. ${schedule.location}`
+                                : "Chưa có phòng"}
+                            </Typography>
+                          </Box>
+                        </TableCell>
+                        <TableCell>
+                          {new Date(schedule.start_date).toLocaleString(
                             "vi-VN",
                           )}
                         </TableCell>
                         <TableCell>
-                          {new Date(schedule.end_date).toLocaleDateString(
-                            "vi-VN",
-                          )}
+                          {new Date(schedule.end_date).toLocaleString("vi-VN")}
                         </TableCell>
                         <TableCell>
                           <Chip
@@ -322,6 +360,29 @@ const ScheduleManagement = () => {
               onChange={handleChange}
               multiline
               rows={2}
+            />
+            <TextField
+              fullWidth
+              label="Hội Đồng (nếu có)"
+              name="council_id"
+              value={formData.council_id}
+              onChange={handleChange}
+              select
+              SelectProps={{ native: true }}
+            >
+              <option value="">-- Chọn Hội Đồng --</option>
+              {councils.map((c) => (
+                <option key={c._id} value={c._id}>
+                  {c.council_name}
+                </option>
+              ))}
+            </TextField>
+            <TextField
+              fullWidth
+              label="Phòng/Địa Điểm (ví dụ: P.201)"
+              name="location"
+              value={formData.location}
+              onChange={handleChange}
             />
             <TextField
               fullWidth

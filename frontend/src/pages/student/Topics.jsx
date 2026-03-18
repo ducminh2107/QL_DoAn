@@ -25,6 +25,8 @@ import {
   Avatar,
   Stack,
   Tooltip,
+  useTheme,
+  alpha,
 } from "@mui/material";
 
 // SAFE IMPORTS
@@ -47,8 +49,17 @@ import toast from "react-hot-toast";
 const TopicsPage = () => {
   console.log("🚀 TopicsPage Component is rendering (Revised Mode)...");
   const navigate = useNavigate();
+  const theme = useTheme();
+
+  // Mảng màu an toàn
+  const primaryMain = theme.palette?.primary?.main || "#1976d2";
+  const successMain = theme.palette?.success?.main || "#2e7d32";
+  const warningMain = theme.palette?.warning?.main || "#ed6c02";
+  const errorMain = theme.palette?.error?.main || "#d32f2f";
+
   const [loading, setLoading] = useState(true);
   const [topics, setTopics] = useState([]);
+  const [apiMessage, setApiMessage] = useState("");
   const [filters, setFilters] = useState({
     search: "",
     category: "",
@@ -67,7 +78,9 @@ const TopicsPage = () => {
     open: false,
     topic: null,
   });
+  const [hasApprovedTopic, setHasApprovedTopic] = useState(false);
 
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => {
     loadTopics();
     loadFilters();
@@ -87,6 +100,8 @@ const TopicsPage = () => {
       const response = await axios.get(`/api/student/topics?${params}`);
       const data = response.data.data || [];
       setTopics(data);
+      setHasApprovedTopic(response.data.has_approved_topic || false);
+      setApiMessage(response.data.message || "");
       setPagination(
         response.data.pagination || { page: 1, totalPages: 1, total: 0 },
       );
@@ -135,29 +150,16 @@ const TopicsPage = () => {
     setFilters((prev) => ({ ...prev, [field]: value, page: 1 }));
   };
 
-  // --- STYLES ---
   const headerGradientSx = {
-    background: "linear-gradient(135deg, #1e3a8a 0%, #3b82f6 100%)",
+    background: "linear-gradient(135deg, #0ea5e9 0%, #2563eb 100%)",
     pt: 6,
     pb: 12,
     color: "white",
     borderRadius: { xs: 0, md: "0 0 32px 32px" },
-    boxShadow: "0 10px 30px -10px rgba(30, 58, 138, 0.4)",
+    boxShadow: "0 10px 30px -10px rgba(37, 99, 235, 0.4)",
     mb: -8,
     position: "relative",
     zIndex: 0,
-  };
-
-  const filterPaperSx = {
-    p: 3,
-    mb: 5,
-    borderRadius: "20px",
-    boxShadow:
-      "0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.01)",
-    bgcolor: "rgba(255, 255, 255, 0.95)",
-    backdropFilter: "blur(10px)",
-    position: "relative",
-    zIndex: 1,
   };
 
   const topicCardSx = {
@@ -168,14 +170,14 @@ const TopicsPage = () => {
     borderRadius: "20px",
     border: "1px solid #f1f5f9",
     boxShadow: "0 4px 6px -1px rgba(0, 0, 0, 0.05)",
-    transition: "transform 0.2s, box-shadow 0.2s",
+    transition: "transform 0.3s, box-shadow 0.3s",
     bgcolor: "white",
     position: "relative",
     overflow: "hidden",
     "&:hover": {
       transform: "translateY(-5px)",
       boxShadow: "0 20px 25px -5px rgba(0, 0, 0, 0.1)",
-      borderColor: "#93c5fd",
+      borderColor: alpha(primaryMain, 0.4),
     },
   };
 
@@ -190,9 +192,10 @@ const TopicsPage = () => {
     fontWeight: 800,
     letterSpacing: "0.05em",
     textTransform: "uppercase",
-    bgcolor: status === "approved" ? "#ecfdf5" : "#fefce8",
-    color: status === "approved" ? "#059669" : "#a16207",
-    border: `1px solid ${status === "approved" ? "#a7f3d0" : "#fde047"}`,
+    bgcolor:
+      status === "approved" ? alpha(successMain, 0.1) : alpha(warningMain, 0.1),
+    color: status === "approved" ? successMain : warningMain,
+    border: `1px solid ${status === "approved" ? alpha(successMain, 0.3) : alpha(warningMain, 0.3)}`,
     boxShadow: "0 2px 4px rgba(0,0,0,0.05)",
   });
 
@@ -236,9 +239,9 @@ const TopicsPage = () => {
               onClick={() => navigate("/student/topics/propose")}
               sx={{
                 bgcolor: "white",
-                color: "#1e3a8a",
+                color: "#2563eb",
                 borderRadius: "12px",
-                fontWeight: 700,
+                fontWeight: 800,
                 px: 3,
                 py: 1.5,
                 textTransform: "none",
@@ -247,10 +250,12 @@ const TopicsPage = () => {
                 "&:hover": {
                   bgcolor: "#f8fafc",
                   transform: "translateY(-2px)",
+                  boxShadow: "0 10px 15px rgba(0,0,0,0.1)",
                 },
+                transition: "all 0.3s ease",
               }}
             >
-              Đề xuất đề tài mới
+              Đề xuất tư tưởng mới
             </Button>
           </Box>
         </Container>
@@ -258,8 +263,20 @@ const TopicsPage = () => {
 
       <Container maxWidth="xl" sx={{ mt: 0 }}>
         {/* Filters */}
-        <Paper sx={filterPaperSx}>
-          <Grid container spacing={3} alignItems="center">
+        <Paper
+          sx={{
+            p: 2,
+            mb: 6,
+            borderRadius: "16px",
+            boxShadow: "0 10px 30px -10px rgba(0,0,0,0.08)",
+            bgcolor: "white",
+            border: "1px solid #f1f5f9",
+            position: "relative",
+            zIndex: 1,
+            mt: -4,
+          }}
+        >
+          <Grid container spacing={2} alignItems="center">
             <Grid item xs={12} md={4}>
               <TextField
                 fullWidth
@@ -269,27 +286,36 @@ const TopicsPage = () => {
                 InputProps={{
                   startAdornment: (
                     <InputAdornment position="start">
-                      <SearchIcon color="action" />
+                      <SearchIcon sx={{ color: "#94a3b8" }} />
                     </InputAdornment>
                   ),
                   sx: {
                     borderRadius: "12px",
                     bgcolor: "#f8fafc",
-                    "& fieldset": { borderColor: "#e2e8f0" },
+                    "& fieldset": { border: "none" },
+                    "&:hover": { bgcolor: "#f1f5f9" },
+                    transition: "all 0.2s",
                   },
                 }}
               />
             </Grid>
             <Grid item xs={6} md={3}>
-              <FormControl fullWidth>
-                <InputLabel>Danh mục</InputLabel>
+              <FormControl fullWidth sx={{ minWidth: 140 }}>
+                <InputLabel sx={{ color: "#64748b", fontWeight: 500 }}>
+                  Danh mục
+                </InputLabel>
                 <Select
                   value={filters.category}
                   onChange={(e) =>
                     handleFilterChange("category", e.target.value)
                   }
                   label="Danh mục"
-                  sx={{ borderRadius: "12px", bgcolor: "#fff" }}
+                  sx={{
+                    borderRadius: "12px",
+                    bgcolor: "#f8fafc",
+                    "& fieldset": { borderColor: "transparent" },
+                    "&:hover fieldset": { borderColor: "#cbd5e1 !important" },
+                  }}
                 >
                   <MenuItem value="">Tất cả danh mục</MenuItem>
                   {categories.map((cat) => (
@@ -301,15 +327,22 @@ const TopicsPage = () => {
               </FormControl>
             </Grid>
             <Grid item xs={6} md={3}>
-              <FormControl fullWidth>
-                <InputLabel>Giảng viên</InputLabel>
+              <FormControl fullWidth sx={{ minWidth: 140 }}>
+                <InputLabel sx={{ color: "#64748b", fontWeight: 500 }}>
+                  Giảng viên
+                </InputLabel>
                 <Select
                   value={filters.instructor}
                   onChange={(e) =>
                     handleFilterChange("instructor", e.target.value)
                   }
                   label="Giảng viên"
-                  sx={{ borderRadius: "12px", bgcolor: "#fff" }}
+                  sx={{
+                    borderRadius: "12px",
+                    bgcolor: "#f8fafc",
+                    "& fieldset": { borderColor: "transparent" },
+                    "&:hover fieldset": { borderColor: "#cbd5e1 !important" },
+                  }}
                 >
                   <MenuItem value="">Tất cả giảng viên</MenuItem>
                   {instructors.map((instructor) => (
@@ -322,7 +355,7 @@ const TopicsPage = () => {
             </Grid>
             <Grid item xs={12} md={2} display="flex" justifyContent="flex-end">
               <Button
-                variant="outlined"
+                variant="text"
                 startIcon={<FilterListIcon />}
                 onClick={() =>
                   setFilters({
@@ -337,10 +370,13 @@ const TopicsPage = () => {
                   borderRadius: "12px",
                   height: "56px",
                   width: "100%",
-                  borderColor: "#e2e8f0",
                   color: "#64748b",
                   textTransform: "none",
-                  "&:hover": { borderColor: "#cbd5e1", bgcolor: "#f8fafc" },
+                  fontWeight: 600,
+                  "&:hover": {
+                    bgcolor: "#eff6ff",
+                    color: "#2563eb",
+                  },
                 }}
               >
                 Xóa bộ lọc
@@ -362,9 +398,24 @@ const TopicsPage = () => {
             startIcon={<AddIcon />}
             size="large"
             onClick={() => navigate("/student/topics/propose")}
-            sx={{ borderRadius: "12px" }}
+            sx={{
+              borderRadius: "12px",
+              bgcolor: "#2563eb",
+              color: "white",
+              fontWeight: 800,
+              px: 3,
+              py: 1.5,
+              textTransform: "none",
+              boxShadow: "0 4px 6px rgba(0,0,0,0.1)",
+              "&:hover": {
+                bgcolor: "#1d4ed8",
+                transform: "translateY(-2px)",
+                boxShadow: "0 10px 15px rgba(0,0,0,0.1)",
+              },
+              transition: "all 0.3s ease",
+            }}
           >
-            Đề xuất đề tài mới
+            Đề xuất tư tưởng mới
           </Button>
         </Box>
 
@@ -382,10 +433,10 @@ const TopicsPage = () => {
             />
             <Grid container spacing={3}>
               {[1, 2, 3].map((i) => (
-                <Grid item xs={12} md={4} key={i}>
+                <Grid item xs={12} key={i}>
                   <Box
                     sx={{
-                      height: 280,
+                      height: 180,
                       bgcolor: "#e2e8f0",
                       borderRadius: "20px",
                     }}
@@ -395,32 +446,51 @@ const TopicsPage = () => {
             </Grid>
           </Box>
         ) : topics.length === 0 ? (
-          <Paper
+          <Box
             sx={{
-              p: 8,
+              display: "flex",
+              flexDirection: "column",
+              alignItems: "center",
+              justifyContent: "center",
+              py: 8,
               textAlign: "center",
-              borderRadius: "24px",
-              bgcolor: "white",
-              boxShadow: "none",
-              border: "1px dashed #e2e8f0",
             }}
           >
-            <Box sx={{ mx: "auto", color: "#cbd5e1", mb: 2 }}>
-              <HourglassEmptyIcon style={{ fontSize: 80, opacity: 0.5 }} />
+            <Box
+              sx={{
+                width: 140,
+                height: 140,
+                borderRadius: "50%",
+                bgcolor: "rgba(37,99,235,0.05)",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                mb: 4,
+              }}
+            >
+              <ExploreIcon
+                sx={{ fontSize: 72, color: "#2563eb", opacity: 0.8 }}
+              />
             </Box>
             <Typography
-              variant="h5"
-              fontWeight={700}
-              color="#334155"
+              variant="h4"
+              fontWeight={800}
+              color="#1e293b"
               gutterBottom
             >
-              Không tìm thấy đề tài nào
+              Chưa có đề tài nào mở đăng ký
             </Typography>
-            <Typography color="#64748b">
-              Thử tìm kiếm với từ khóa khác hoặc xóa bộ lọc xem sao.
+            <Typography
+              variant="h6"
+              color="#64748b"
+              sx={{ maxWidth: 600, mx: "auto", mb: 4, fontWeight: 400 }}
+            >
+              {apiMessage
+                ? apiMessage
+                : "Rất tiếc, hiện tại không có đợt đăng ký hoặc không có thỏa mãn bộ lọc của bạn."}
             </Typography>
             <Button
-              sx={{ mt: 3 }}
+              size="large"
               variant="outlined"
               onClick={() =>
                 setFilters({
@@ -431,10 +501,24 @@ const TopicsPage = () => {
                   limit: 6,
                 })
               }
+              sx={{
+                borderRadius: "12px",
+                borderWidth: "2px",
+                fontWeight: 700,
+                color: "#2563eb",
+                borderColor: "#bfdbfe",
+                px: 4,
+                py: 1.5,
+                "&:hover": {
+                  borderWidth: "2px",
+                  borderColor: "#2563eb",
+                  bgcolor: "#eff6ff",
+                },
+              }}
             >
-              Xóa bộ lọc
+              Xóa bộ lọc và Thử lại
             </Button>
-          </Paper>
+          </Box>
         ) : (
           <Box>
             <Grid container spacing={3} pb={4} alignItems="stretch">
@@ -442,12 +526,10 @@ const TopicsPage = () => {
                 <Grid
                   item
                   xs={12}
-                  md={6}
-                  lg={4}
                   key={topic._id}
-                  sx={{ display: "flex" }}
+                  sx={{ display: "flex", width: "100%" }}
                 >
-                  <Card sx={topicCardSx} elevation={0}>
+                  <Card sx={{ ...topicCardSx, width: "100%" }} elevation={0}>
                     <CardContent sx={{ flexGrow: 1, p: 3 }}>
                       {/* Status Badge */}
                       <Box sx={statusBadgeSx(topic.topic_teacher_status)}>
@@ -466,8 +548,8 @@ const TopicsPage = () => {
                           size="small"
                           sx={{
                             borderRadius: "8px",
-                            bgcolor: "#eff6ff",
-                            color: "#3b82f6",
+                            bgcolor: alpha(primaryMain, 0.1),
+                            color: primaryMain,
                             fontWeight: 700,
                             fontSize: "0.75rem",
                             border: "none",
@@ -476,20 +558,15 @@ const TopicsPage = () => {
                         />
                       </Box>
 
-                      {/* Title - Fixed Min Height for Alignment */}
+                      {/* Title */}
                       <Typography
-                        variant="h6"
+                        variant="h5"
                         title={topic.topic_title}
                         sx={{
                           fontWeight: 700,
                           lineHeight: 1.4,
                           color: "#1e293b",
                           mb: 2,
-                          minHeight: "3.6em", // ~2.5 lines of text fixed height
-                          display: "-webkit-box",
-                          WebkitLineClamp: 2,
-                          WebkitBoxOrient: "vertical",
-                          overflow: "hidden",
                         }}
                       >
                         {topic.topic_title}
@@ -503,7 +580,7 @@ const TopicsPage = () => {
                           sx={{
                             width: 36,
                             height: 36,
-                            bgcolor: "#3b82f6",
+                            bgcolor: primaryMain,
                             fontWeight: 600,
                           }}
                         >
@@ -560,7 +637,9 @@ const TopicsPage = () => {
                             variant="caption"
                             fontWeight={800}
                             color={
-                              topic.has_available_slots ? "#16a34a" : "#dc2626"
+                              topic.has_available_slots
+                                ? successMain
+                                : errorMain
                             }
                           >
                             <span style={{ fontSize: "1rem" }}>
@@ -585,8 +664,8 @@ const TopicsPage = () => {
                             "& .MuiLinearProgress-bar": {
                               borderRadius: 4,
                               bgcolor: topic.has_available_slots
-                                ? "#3b82f6"
-                                : "#ef4444",
+                                ? "#0ea5e9"
+                                : errorMain,
                             },
                           }}
                         />
@@ -597,44 +676,70 @@ const TopicsPage = () => {
                     <CardActions
                       sx={{
                         p: 2,
-                        px: 3,
                         pt: 0,
                         justifyContent: "space-between",
+                        alignItems: "center",
                       }}
                     >
                       <Button
-                        startIcon={<BlockIcon style={{ fontSize: 18 }} />} // Placeholder details icon
+                        variant="outlined"
+                        endIcon={<ArrowForwardIcon />}
                         onClick={() => navigate(`/student/topics/${topic._id}`)}
                         sx={{
                           textTransform: "none",
-                          color: "#64748b",
+                          borderRadius: "8px",
                           fontWeight: 600,
+                          color: primaryMain,
+                          borderColor: alpha(primaryMain, 0.3),
                           "&:hover": {
-                            color: "#3b82f6",
-                            bgcolor: "transparent",
+                            bgcolor: alpha(primaryMain, 0.05),
+                            borderColor: primaryMain,
                           },
                         }}
                       >
                         Chi tiết
                       </Button>
 
-                      {topic.has_available_slots ? (
+                      {hasApprovedTopic ? (
+                        <Chip
+                          icon={<CheckCircleIcon />}
+                          label="Đã chốt đề tài"
+                          size="medium"
+                          sx={{
+                            borderRadius: "8px",
+                            fontWeight: 600,
+                            bgcolor: "#dcfce7",
+                            color: "#15803d",
+                            border: "1px solid #bbf7d0",
+                          }}
+                        />
+                      ) : topic.student_registration_status?.is_member ? (
+                        <Chip
+                          icon={<CheckCircleIcon />}
+                          label="Đã tham gia"
+                          size="medium"
+                          color="success"
+                          sx={{ borderRadius: "8px", fontWeight: 600 }}
+                        />
+                      ) : topic.student_registration_status?.has_pending_request ? (
+                        <Chip
+                          icon={<HourglassEmptyIcon />}
+                          label="Đang chờ duyệt"
+                          size="medium"
+                          color="warning"
+                          sx={{ borderRadius: "8px", fontWeight: 600 }}
+                        />
+                      ) : topic.has_available_slots ? (
                         <Button
                           variant="contained"
-                          disableElevation
-                          onClick={() =>
-                            setRegisterDialog({ open: true, topic })
-                          }
-                          endIcon={
-                            <ArrowForwardIcon style={{ fontSize: 18 }} />
-                          }
+                          startIcon={<AddIcon />}
+                          onClick={() => setRegisterDialog({ open: true, topic })}
                           sx={{
-                            borderRadius: "10px",
-                            textTransform: "none",
-                            fontWeight: 700,
-                            bgcolor: "#1e3a8a",
-                            px: 3,
-                            "&:hover": { bgcolor: "#1e293b" },
+                            borderRadius: "8px",
+                            fontWeight: 600,
+                            boxShadow: "none",
+                            bgcolor: successMain,
+                            "&:hover": { bgcolor: alpha(successMain, 0.9) },
                           }}
                         >
                           Đăng ký
@@ -698,7 +803,12 @@ const TopicsPage = () => {
             onClick={handleRegister}
             variant="contained"
             autoFocus
-            sx={{ borderRadius: "8px", fontWeight: 600, bgcolor: "#1e3a8a" }}
+            sx={{
+              borderRadius: "8px",
+              fontWeight: 600,
+              bgcolor: primaryMain,
+              "&:hover": { bgcolor: alpha(primaryMain, 0.9) },
+            }}
           >
             Đồng ý đăng ký
           </Button>

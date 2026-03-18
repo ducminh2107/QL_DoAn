@@ -27,14 +27,14 @@ export const AuthProvider = ({ children }) => {
       (response) => response,
       async (error) => {
         if (error.response?.status === 401) {
-          // Token expired, try to refresh
+          // Token expired — thử refresh
           try {
             const newToken = await refreshToken();
             if (newToken) {
               error.config.headers.Authorization = `Bearer ${newToken}`;
               return axios(error.config);
             }
-          } catch (refreshError) {
+          } catch {
             logout();
             window.location.href = "/login";
           }
@@ -61,11 +61,8 @@ export const AuthProvider = ({ children }) => {
   const loadUser = async () => {
     try {
       const response = await axios.get("/api/auth/me");
-      console.log("🔍 User loaded from API:", response.data.data.user);
-      console.log("📍 User role:", response.data.data.user.role);
       setUser(response.data.data.user);
-    } catch (error) {
-      console.error("Failed to load user:", error);
+    } catch {
       localStorage.removeItem("token");
       setToken(null);
     } finally {
@@ -74,37 +71,21 @@ export const AuthProvider = ({ children }) => {
   };
 
   const login = async (email, password) => {
-    try {
-      const response = await axios.post("/api/auth/login", {
-        email,
-        password,
-      });
-
-      const { accessToken, user } = response.data.data;
-
-      localStorage.setItem("token", accessToken);
-      setToken(accessToken);
-      setUser(user);
-
-      return response.data;
-    } catch (error) {
-      throw error;
-    }
+    const response = await axios.post("/api/auth/login", { email, password });
+    const { accessToken, user } = response.data.data;
+    localStorage.setItem("token", accessToken);
+    setToken(accessToken);
+    setUser(user);
+    return response.data;
   };
 
   const register = async (userData) => {
-    try {
-      const response = await axios.post("/api/auth/register", userData);
-      const { accessToken, user } = response.data.data;
-
-      localStorage.setItem("token", accessToken);
-      setToken(accessToken);
-      setUser(user);
-
-      return response.data;
-    } catch (error) {
-      throw error;
-    }
+    const response = await axios.post("/api/auth/register", userData);
+    const { accessToken, user } = response.data.data;
+    localStorage.setItem("token", accessToken);
+    setToken(accessToken);
+    setUser(user);
+    return response.data;
   };
 
   const logout = async () => {
@@ -121,17 +102,11 @@ export const AuthProvider = ({ children }) => {
   };
 
   const refreshToken = async () => {
-    try {
-      const response = await axios.post("/api/auth/refresh-token");
-      const { accessToken } = response.data.data;
-
-      localStorage.setItem("token", accessToken);
-      setToken(accessToken);
-
-      return accessToken;
-    } catch (error) {
-      throw error;
-    }
+    const response = await axios.post("/api/auth/refresh-token");
+    const { accessToken } = response.data.data;
+    localStorage.setItem("token", accessToken);
+    setToken(accessToken);
+    return accessToken;
   };
 
   const updateProfile = async (userData) => {

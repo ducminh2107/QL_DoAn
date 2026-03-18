@@ -6,13 +6,7 @@ const ProtectedRoute = ({ children, roles = [] }) => {
   const { user, loading, isAuthenticated } = useAuth();
   const location = useLocation();
 
-  console.log("🔐 ProtectedRoute Check:");
-  console.log("   - Loading:", loading);
-  console.log("   - Authenticated:", isAuthenticated);
-  console.log("   - User:", user);
-  console.log("   - Required roles:", roles);
-  console.log("   - User role:", user?.role);
-
+  // Đang kiểm tra trạng thái xác thực
   if (loading) {
     return (
       <Box
@@ -26,22 +20,16 @@ const ProtectedRoute = ({ children, roles = [] }) => {
     );
   }
 
+  // Chưa đăng nhập → về trang login, giữ lại URL để redirect sau khi login
   if (!isAuthenticated) {
-    console.log("❌ Not authenticated - redirecting to /login");
     return <Navigate to="/login" state={{ from: location }} replace />;
   }
 
+  // Sai role → trang 403
   if (roles.length > 0 && !roles.includes(user.role)) {
-    console.log(
-      "❌ Role mismatch - required:",
-      roles,
-      "but user has:",
-      user.role
-    );
     return <Navigate to="/unauthorized" replace />;
   }
 
-  console.log("✅ Access granted");
   return children;
 };
 

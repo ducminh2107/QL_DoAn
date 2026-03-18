@@ -8,13 +8,12 @@ const notificationSchema = new mongoose.Schema(
       trim: true,
     },
     user_notification_sender: {
-      type: String,
-      trim: true,
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'User',
     },
     user_notification_recipient: {
       type: String,
       required: true,
-      trim: true,
     },
     user_notification_content: {
       type: String,
@@ -30,8 +29,8 @@ const notificationSchema = new mongoose.Schema(
       default: false,
     },
     user_notification_topic: {
-      type: String,
-      trim: true,
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'Topic',
     },
   },
   {

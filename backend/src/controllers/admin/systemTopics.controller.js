@@ -23,7 +23,7 @@ exports.getAllTopics = async (req, res) => {
     await SystemLog.create({
       action: 'GET_SYSTEM_TOPICS',
       collection_name: 'topics',
-      user_id: req.user.user_id,
+      user_id: req.user.id,
       changes: { filter },
       ip_address: req.ip,
     });
@@ -63,20 +63,23 @@ exports.createTopic = async (req, res) => {
       });
     }
 
-    const topic = new Topic({
+    const topicData = {
       topic_title,
       topic_description,
       topic_category,
       topic_major,
       topic_max_members,
-      topic_registration_period,
       topic_creator: req.user._id,
-      topic_creator_id: req.user.user_id,
       topic_teacher_status: 'approved',
       topic_leader_status: 'approved',
       is_system_topic: true,
       is_active: true,
-    });
+    };
+    if (topic_registration_period) {
+      topicData.topic_registration_period = topic_registration_period;
+    }
+
+    const topic = new Topic(topicData);
 
     await topic.save();
 
@@ -84,7 +87,7 @@ exports.createTopic = async (req, res) => {
       action: 'CREATE_SYSTEM_TOPIC',
       collection_name: 'topics',
       document_id: topic._id,
-      user_id: req.user.user_id,
+      user_id: req.user.id,
       changes: { topic_title, topic_category },
       ip_address: req.ip,
     });
@@ -141,7 +144,7 @@ exports.updateTopic = async (req, res) => {
       action: 'UPDATE_SYSTEM_TOPIC',
       collection_name: 'topics',
       document_id: topic._id,
-      user_id: req.user.user_id,
+      user_id: req.user.id,
       changes: updateData,
       ip_address: req.ip,
     });
@@ -174,7 +177,7 @@ exports.deleteTopic = async (req, res) => {
       action: 'DELETE_SYSTEM_TOPIC',
       collection_name: 'topics',
       document_id: topic._id,
-      user_id: req.user.user_id,
+      user_id: req.user.id,
       changes: { topic_title: topic.topic_title },
       ip_address: req.ip,
     });

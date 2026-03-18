@@ -18,6 +18,7 @@ const rubricRoutes = require('./routes/admin/rubric.routes');
 const reportRoutes = require('./routes/admin/report.routes');
 const majorRoutes = require('./routes/admin/major.routes');
 const facultyRoutes = require('./routes/admin/faculty.routes');
+const adminTopicsRoutes = require('./routes/admin/topic.routes');
 const adminSystemTopicsRoutes = require('./routes/admin/systemTopics.routes');
 const adminScheduleRoutes = require('./routes/admin/schedule.routes');
 const adminSettingsRoutes = require('./routes/admin/settings.routes');
@@ -47,6 +48,9 @@ app.use(
 app.use(helmet());
 app.use(morgan('dev'));
 
+// Static files
+app.use('/uploads', express.static(path.join(__dirname, '../uploads')));
+
 // Cache control middleware for API endpoints
 app.use('/api', (req, res, next) => {
   res.set(
@@ -73,6 +77,7 @@ app.use('/api/majors', majorRoutes);
 app.use('/api/faculties', facultyRoutes);
 
 // Admin Routes
+app.use('/api/admin/topics', adminTopicsRoutes);
 app.use('/api/admin/system-topics', adminSystemTopicsRoutes);
 app.use('/api/admin/schedules', adminScheduleRoutes);
 app.use('/api/admin/system-settings', adminSettingsRoutes);

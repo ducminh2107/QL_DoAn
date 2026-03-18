@@ -15,18 +15,19 @@ const semesterSchema = new mongoose.Schema(
       enum: ['1', '2', 'he'],
       required: [true, 'Hoc ky bat buoc'],
     },
-    registration_periods: [
-      {
-        period_id: {
-          type: mongoose.Schema.Types.ObjectId,
-          ref: 'RegistrationPeriod',
-        },
-        period_name: String,
-        start_date: Date,
-        end_date: Date,
-        status: String,
-      },
-    ],
+    start_date: {
+      type: Date,
+      required: [false, 'Ngay bat dau bat buoc'], // making false initially to prevent breaking existing data
+    },
+    end_date: {
+      type: Date,
+      required: [false, 'Ngay ket thuc bat buoc'],
+    },
+    is_active: {
+      type: Boolean,
+      default: false,
+    },
+    // registration_periods removed. Mối quan hệ được quản lý qua collection registrationperiods
   },
   {
     timestamps: { createdAt: 'created_at', updatedAt: 'updated_at' },

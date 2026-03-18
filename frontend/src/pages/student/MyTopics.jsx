@@ -40,6 +40,9 @@ import toast from "react-hot-toast";
 const MyTopics = () => {
   const navigate = useNavigate();
   const theme = useTheme();
+
+  const primaryMain = theme.palette?.primary?.main || "#1976d2";
+
   const [topics, setTopics] = useState([]);
   const [loading, setLoading] = useState(true);
   const [selectedTopic, setSelectedTopic] = useState(null);
@@ -78,7 +81,7 @@ const MyTopics = () => {
   const handleCancel = async (topicId) => {
     if (window.confirm("Bạn có chắc muốn hủy đăng ký đề tài này?")) {
       try {
-        await axios.delete(`/api/student/topics/${topicId}`);
+        await axios.delete(`/api/student/topics/${topicId}/register`);
         toast.success("Hủy đăng ký đề tài thành công");
         fetchMyTopics();
       } catch {
@@ -121,7 +124,7 @@ const MyTopics = () => {
   const glassCardSx = {
     background: "rgba(255, 255, 255, 0.8)",
     backdropFilter: "blur(20px)",
-    borderRadius: "24px",
+    borderRadius: "20px",
     border: "1px solid rgba(255, 255, 255, 0.5)",
     boxShadow: "0 8px 32px rgba(0, 0, 0, 0.04)",
     transition: "all 0.3s cubic-bezier(0.4, 0, 0.2, 1)",
@@ -130,8 +133,20 @@ const MyTopics = () => {
     "&:hover": {
       transform: "translateY(-5px)",
       boxShadow: "0 15px 45px rgba(0, 0, 0, 0.08)",
-      borderColor: theme.palette.primary.main,
+      borderColor: alpha(primaryMain, 0.4),
     },
+  };
+
+  const headerGradientSx = {
+    background: "linear-gradient(135deg, #0ea5e9 0%, #2563eb 100%)",
+    pt: 6,
+    pb: 12,
+    color: "white",
+    borderRadius: { xs: 0, md: "0 0 32px 32px" },
+    boxShadow: "0 10px 30px -10px rgba(37, 99, 235, 0.4)",
+    mb: -6,
+    position: "relative",
+    zIndex: 0,
   };
 
   if (loading) {
@@ -144,34 +159,32 @@ const MyTopics = () => {
 
   return (
     <Box sx={{ bgcolor: "#F8FAFC", minHeight: "100vh", pb: 6 }}>
-      <Container maxWidth="xl">
-        {/* Header Section */}
-        <Box
-          sx={{
-            py: 5,
-            display: "flex",
-            justifyContent: "space-between",
-            alignItems: "flex-end",
-          }}
-        >
-          <Box>
-            <Typography
-              variant="h3"
-              sx={{
-                fontWeight: 900,
-                color: "#1E293B",
-                letterSpacing: "-0.04em",
-                mb: 1,
-              }}
-            >
-              Đề tài của tôi 📚
-            </Typography>
-            <Typography variant="h6" sx={{ color: "#64748B", fontWeight: 400 }}>
-              Nơi lưu giữ và theo dõi hành trình nghiên cứu của bạn.
-            </Typography>
-          </Box>
-        </Box>
+      {/* Header */}
+      <Box sx={headerGradientSx}>
+        <Container maxWidth="xl">
+          <Typography
+            variant="h3"
+            fontWeight={800}
+            sx={{
+              display: "flex",
+              alignItems: "center",
+              gap: 2,
+              mb: 1.5,
+              letterSpacing: "-0.02em",
+            }}
+          >
+            Đề tài của tôi 📚
+          </Typography>
+          <Typography
+            variant="h6"
+            sx={{ opacity: 0.9, fontWeight: 400, maxWidth: "600px" }}
+          >
+            Nơi lưu giữ và theo dõi hành trình nghiên cứu của bạn.
+          </Typography>
+        </Container>
+      </Box>
 
+      <Container maxWidth="xl" sx={{ position: "relative", zIndex: 1 }}>
         {topics.length === 0 ? (
           <Paper
             sx={{

@@ -8,5 +8,6 @@ router.use(authorize('admin'));
 
 router.get('/stats', reportController.getSystemStats);
 router.get('/data', reportController.getReports);
+router.get('/dashboard', reportController.getDashboard);
 
 module.exports = router;

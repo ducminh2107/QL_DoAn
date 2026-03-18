@@ -1,5 +1,20 @@
 const SystemLog = require('../../models/SystemLog');
 
+// Actions considered "read-only" noise — excluded by default
+const READ_ACTIONS = [
+  'GET_SYSTEM_TOPICS',
+  'GET_TOPICS',
+  'GET_USERS',
+  'GET_SETTINGS',
+  'GET_LOGS',
+  'GET_REPORTS',
+  'GET_RUBRICS',
+  'GET_COUNCILS',
+  'GET_SCHEDULES',
+  'GET_SEMESTERS',
+  'VIEW',
+];
+
 // Get all system logs
 exports.getAllLogs = async (req, res) => {
   try {
@@ -10,10 +25,15 @@ exports.getAllLogs = async (req, res) => {
       searchMessage,
       page = 1,
       limit = 50,
+      includeReads = 'false',
     } = req.query;
 
     const filter = {};
-    if (action) filter.action = action;
+    if (action) {
+      filter.action = action;
+    } else if (includeReads === 'false') {
+      filter.action = { $nin: READ_ACTIONS };
+    }
     if (collection) filter.collection_name = collection;
     if (userId) filter.user_id = userId;
     if (searchMessage) {
@@ -24,15 +44,30 @@ exports.getAllLogs = async (req, res) => {
     }
 
     const logs = await SystemLog.find(filter)
+      .populate('user_id', 'user_name user_id email role')
       .sort({ timestamp: -1 })
       .skip((page - 1) * limit)
       .limit(parseInt(limit));
 
     const total = await SystemLog.countDocuments(filter);
 
+    const data = logs.map((log) => ({
+      _id: log._id,
+      action: log.action,
+      collection_name: log.collection_name,
+      document_id: log.document_id,
+      user_name: log.user_id?.user_name || null,
+      user_code: log.user_id?.user_id || null,
+      user_email: log.user_id?.email || null,
+      user_role: log.user_id?.role || null,
+      changes: log.changes,
+      timestamp: log.timestamp,
+      ip_address: (log.ip_address || '').replace('::ffff:', ''),
+    }));
+
     res.json({
       success: true,
-      data: logs,
+      data,
       pagination: {
         total,
         page: parseInt(page),
@@ -143,7 +178,7 @@ exports.clearOldLogs = async (req, res) => {
         deletedCount: result.deletedCount,
         daysOld,
       },
-      user_id: req.user.user_id,
+      user_id: req.user.id,
       ip_address: req.ip,
     });
 

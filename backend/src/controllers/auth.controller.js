@@ -141,6 +141,9 @@ const login = async (req, res, next) => {
       maxAge: 30 * 24 * 60 * 60 * 1000, // 30 days
     });
 
+    await user.populate('user_major', 'major_title major_code');
+    await user.populate('user_faculty', 'faculty_title');
+
     // Send response
     res.status(200).json({
       success: true,
@@ -294,18 +297,18 @@ const forgotPassword = async (req, res, next) => {
     const resetToken = user.generatePasswordResetToken();
     await user.save();
 
-    // Create reset URL
-    const resetUrl = `${process.env.FRONTEND_URL}/reset-password/${resetToken}`;
+    // Tạo reset URL gửi qua email
+    const resetUrl = `${process.env.FRONTEND_URL || 'http://localhost:5173'}/reset-password/${resetToken}`;
 
-    // TODO: Send email with reset link
-    console.log('Reset Password URL:', resetUrl);
+    // TODO: Tích hợp dịch vụ email (NodeMailer, SendGrid...)
+    // Tạm thời log ra server console trong môi trường development
+    if (process.env.NODE_ENV !== 'production') {
+      console.log('[DEV] Reset Password URL:', resetUrl);
+    }
 
     res.status(200).json({
       success: true,
-      message: 'Email đặt lại mật khẩu đã được gửi',
-      data: {
-        resetToken, // Only for development, remove in production
-      },
+      message: 'Nếu email tồn tại, link đặt lại mật khẩu đã được gửi',
     });
   } catch (error) {
     next(error);
@@ -377,7 +380,9 @@ const resetPassword = async (req, res, next) => {
  */
 const getMe = async (req, res, next) => {
   try {
-    const user = await User.findById(req.user.id);
+    const user = await User.findById(req.user.id)
+      .populate('user_major', 'major_title major_code')
+      .populate('user_faculty', 'faculty_title');
 
     res.status(200).json({
       success: true,
@@ -438,7 +443,9 @@ const updateProfile = async (req, res, next) => {
     const user = await User.findByIdAndUpdate(req.user.id, updateData, {
       new: true,
       runValidators: true,
-    });
+    })
+      .populate('user_major', 'major_title major_code')
+      .populate('user_faculty', 'faculty_title');
 
     res.status(200).json({
       success: true,
